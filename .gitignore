@@ -3,3 +3,8 @@
 *.log
 .Rhistory
 .Rproj.user/
+.DS_Store
+*.tmp
+*.log
+.Rhistory
+.Rproj.user/
