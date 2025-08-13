@@ -1,29 +1,102 @@
 # helpers.R
-suppressMessages(library(broom))
-suppressMessages(library(forestplot))
-suppressMessages(library(shiny))
-suppressMessages(library(ggplot2))
-suppressMessages(library(dplyr))
-suppressMessages(library(tidyr))
-suppressMessages(library(data.table))
-suppressMessages(library(readxl))
-suppressMessages(library(stringr))
-suppressMessages(library(ggradar))
-suppressMessages(library(scales))
-suppressMessages(library(gridExtra))
-suppressMessages(library(ggsci))
-suppressMessages(library(patchwork))
-suppressMessages(library(maftools))
-suppressMessages(library(ggdist))
-suppressMessages(library(ggthemes))
-suppressMessages(library(ggrepel))
-suppressMessages(library(ComplexHeatmap))
+# Set CRAN mirror explicitly (required on shinyapps.io)
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-data_path <- "./data/"
+# Activate renv
+renv::activate()
+
+# Load packages
+library(shiny)
+library(rmarkdown)
+library(shinycssloaders)
+library(ggradar)
+library(gridExtra)
+library(ggthemes)
+library(patchwork)
+
+libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
+          "broom", "ggrepel", "plotly", "survival", "survminer", 
+          "purrr", "grid")
+lapply(libs, library, character.only = TRUE)
+
+# Conditional packages
+conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
+for (pkg in conditional_packages) {
+  if (requireNamespace(pkg, quietly = TRUE)) {
+    library(pkg, character.only = TRUE, quietly = TRUE)
+  }
+}
+
+# Fallback for ggradar
+#if (!requireNamespace("ggradar", quietly = TRUE)) {
+#  ggradar <- function(...) {
+#    warning("ggradar not available, using basic plot")
+#    ggplot2::ggplot() + ggplot2::geom_blank()
+#  }
+#}
+
+#cat("Packages loaded successfully!\n")
+
+# Load libraries
+# Define all the packages you want to load
+# Install missing packages and load them
+#libs <- c(
+#  "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
+#   "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
+#  "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
+#  "survival", "survminer", "shinycssloaders", "grid"
+#)
+
+# Install missing packages and load them
+#load_or_install <- function(pkg) {
+#  if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+#    if (pkg == "maftools") {
+#      if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+#      BiocManager::install(pkg, update = FALSE, ask = FALSE)
+#    } else {
+#      install.packages(pkg, dependencies = TRUE)
+#    }
+#    suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
+#  }
+#}
+
+#invisible(lapply(libs, load_or_install))
+
+# For tidyquant: install if missing, but do NOT load
+#if (!requireNamespace("tidyquant", quietly = TRUE)) {
+#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+#  devtools::install_github("mdancho84/tidyquant")
+#}
+
+#if (!requireNamespace("ggradar", quietly = TRUE)) {
+#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+#  devtools::install_github("ricardo-bion/ggradar")
+#}
+
+base_path <- getwd()
+data_path <- file.path(base_path, "data")
 
 ##################################
 # Read Data
 ##################################
+# Load data
+load_data_files <- function() {
+  list(
+    long_data = data.table::fread(file.path(data_path, "CRISPR/GeneMatrix_long.csv")),
+    CRISPR_pathways = data.table::fread(file.path(data_path, "CRISPR/C5BP_selected_list.csv")),
+    CRISPR_all = data.table::fread(file.path(data_path, "CRISPR/CRISPR_all.csv")),
+    ICB_merge = readRDS(file.path(data_path, "ICB/ICB_merge.rds")),
+    ICB_surv = readRDS(file.path(data_path, "ICB/ICB_survival.rds")),
+    data_crispr = data.table::fread(file.path(data_path, "CRISPR/C5BP_all.csv")),
+    MouseToHuman_gene = data.table::fread(file.path(data_path, "Refence_data/Referecen_MouseToHuman_gene.csv")),
+    driver_list = fread(file.path(data_path, "Refence_data/TableS1_compendium_mutational_drivers_clean.csv"))
+  )
+}
+
+data_list <- load_data_files()
+list2env(data_list, envir = .GlobalEnv)
+MouseGene <- MouseToHuman_gene$id
+
 # Function to load cohort-specific data
 dynamic_cohort_data <- function(cohort) {
   suffix <- switch(cohort,
@@ -38,15 +111,26 @@ dynamic_cohort_data <- function(cohort) {
   cohort_path <- paste0(data_path, "/Cohorts/", suffix)
   
   list(
-    diff_all = readRDS(file.path(paste0(cohort_path, "/diff_data_", suffix, ".rds"))),
+    diff_all = readRDS(file.path(paste0(cohort_path, "/diff_all_", suffix, ".rds"))),
     diff_allgene = readRDS(file.path(paste0(cohort_path, "/diff_allgene_", suffix, ".rds"))),
-    ciber_all = fread(file.path(cohort_path, paste0("/ciber_", suffix, ".csv"))),
+    ciber_all = data.table::fread(file.path(cohort_path, paste0("/ciber_", suffix, ".csv"))),
     maf_data = readRDS(paste0(cohort_path, "/maf_object_", suffix, ".rds")),
-    LOH_MSI = fread(file.path(cohort_path, paste0("/clinical_", suffix, ".csv"))),
-    surv_data = fread(file.path(cohort_path, paste0("/survival_", suffix, ".csv"))),
-    Freq_all = fread(file.path(cohort_path, paste0("/oncoMSS_", suffix, ".csv")))
+    clinical_data = data.table::fread(file.path(cohort_path, paste0("/clinical_", suffix, ".csv"))),
+    surv_data = data.table::fread(file.path(cohort_path, paste0("/survival_", suffix, ".csv"))),
+    Freq_all = data.table::fread(file.path(cohort_path, paste0("/oncoMSS_", suffix, ".csv")))
   )
 }
+
+##################################
+# Set cell type list
+##################################
+cell_type_files <- c(
+  "MHC-I Regulators" = "MHCregulators",
+  "T-cell Killing" = "Tcells",
+  "NK-cell Killing" = "NKcells",
+  "Macrophage Killing" = "Macrophages",
+  "GDT-cell Killing" = "GammadeltaTcells"
+)
 
 ##################################
 # Set Colors
@@ -80,30 +164,6 @@ col = c("Missense_Mutation" = "#377EB8", "Splice_Site" = "#beaed4", "Nonsense_Mu
         "Multi_Hit" = "#8B2323", "Translation_Start_Site" = "#1E90FF", "In_Frame_Del" = "#00CD66", "In_Frame_Ins" = "#EEAD0E", "Nonstop_Mutation" = "#fc8d62", "Complex Event" = "#66CCFF", 
         "Amp" = "red", "Del" = "blue", "HLALOH" = "#CD6090")
 
-heatmap_legend_param = list(title = "Alternations", 
-                            at = c("Missense_Mutation", "Multi_Hit", "Nonsense_Mutation", "Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site", "In_Frame_Del", "In_Frame_Ins", "Nonstop_Mutation", "Complex Event", "Amp", "Del", "HLALOH"), 
-                            labels = c("Missense_Mutation", "Multi_Hit", "Nonsense_Mutation", "Frame_Shift_Del", "Frame_Shift_Ins", "Splice_Site", "Translation_Start_Site", "In_Frame_Del", "In_Frame_Ins", "Nonstop_Mutation", "Complex Event", "Amp", "Del", "HLALOH"),
-                            direction = "horizontal",
-                            nrow = 2,
-                            title_gp = gpar(fontsize = 6), 
-                            labels_gp = gpar(fontsize = 6))
-
-alter_fun = list(background = alter_graphic("rect", fill = "#e9e9e9"),   
-                 Missense_Mutation = alter_graphic("rect", fill = col["Missense_Mutation"]),
-                 Splice_Site = alter_graphic("rect", fill = col["Splice_Site"]),
-                 Nonsense_Mutation = alter_graphic("rect",fill = col["Nonsense_Mutation"],),
-                 Frame_Shift_Del = alter_graphic("rect", fill = col["Frame_Shift_Del"]),
-                 Frame_Shift_Ins = alter_graphic("rect", fill = col["Frame_Shift_Ins"]),
-                 Multi_Hit = alter_graphic("rect", fill = col["Multi_Hit"]),
-                 Translation_Start_Site = alter_graphic("rect", fill = col["Translation_Start_Site"]),
-                 In_Frame_Del = alter_graphic("rect", fill = col["In_Frame_Del"]), 
-                 In_Frame_Ins = alter_graphic("rect", fill = col["In_Frame_Ins"]),
-                 Nonstop_Mutation = alter_graphic("rect", fill = col["Nonstop_Mutation"]),
-                 `Complex Event` = alter_graphic("rect", fill = col["Complex Event"]),
-                 Amp = alter_graphic("rect", fill = col["Amp"]),
-                 Del = alter_graphic("rect", fill = col["Del"]),
-                 HLALOH = alter_graphic("rect", fill = col["HLALOH"]))
-
 cell_type_files <- c(
   "MHC-I Regulators" = "MHCregulators",
   "T-cell Killing" = "Tcells",
@@ -125,9 +185,17 @@ insert_newlines_every_five_words2 <- function(s) {
   }), collapse = " ")
 }
 
-rename_list <- fread(file.path(data_path, "/CRISPR/rename_list.csv")) %>%
+rename_list <- data.table::fread(file.path(data_path, "/CRISPR/rename_list.csv")) %>%
   mutate(pathway = str_to_title(pathway),
          pathway_new = sapply(pathway_new, insert_newlines_every_five_words2))
+
+cell_type_files <- c(
+  "MHC-I Regulators" = "MHCregulators",
+  "T-cell Killing" = "Tcells",
+  "NK-cell Killing" = "NKcells",
+  "Macrophage Killing" = "Macrophages",
+  "GDT-cell Killing" = "GammadeltaTcells"
+)
 
 ##################################
 # Plotting
@@ -293,6 +361,7 @@ plot_radar_all <- function(Freq_all, cell_type) {
   
 }
 
+
 ## Plotting KM plots
 grid.draw.ggsurvplot <- function(x){
   survminer:::print.ggsurvplot(x, newpage = FALSE)
@@ -358,13 +427,25 @@ color_vector <- setNames(color_palette, timing_bin_levels)
 data_legend <- data.frame(value = c(0, 0.5, 1),
                           group = c("A", "B", "C"))
 
-plot_timing_summary <- function(diff_all, driver_list, LOH_MSI, type, cell_type,
+plot_timing_summary <- function(diff_all, driver_list, clinical_data, type, cell_type,
                                 cutoff_mut = 0.6, cutoff_pathway = 0.5,
                                 cutoff_ratio = 2, mode = 2, num_filter = 4) {
   
   drivergene_cancer <- driver_list %>% filter(grepl(type, Tissue)) %>% pull(Gene)
   data_driver <- diff_all %>% filter(histology_abbreviation == !!type, pathway %in% drivergene_cancer) %>% filter(!is.na(mean_diff)) 
-  data_nondriver <- diff_all %>% filter(histology_abbreviation == !!type, celltype %in% !!cell_type) %>% filter(!is.na(mean_diff)) 
+  
+  if (length(cell_type > 1)) {
+    data_reg <- diff_all %>% filter(histology_abbreviation == !!type, celltype %in% !!cell_type) %>% filter(!is.na(mean_diff))
+    data_APM <- diff_all %>% filter(histology_abbreviation == !!type, pathway == "APM") %>% filter(!is.na(mean_diff))
+    if(nrow(data_APM) > 0) {
+      data_nondriver <- rbind(data_reg, data_APM)
+    } else {
+      data_nondriver <- data_reg
+    }
+    
+  } else {
+    data_nondriver <- diff_all %>% filter(histology_abbreviation == !!type, celltype %in% !!cell_type) %>% filter(!is.na(mean_diff)) 
+  }
   
   data_all <- rbind(data_driver, data_nondriver)
   pathway_list <- data_all %>% distinct(pathway, regulator, .keep_all = F)
@@ -402,7 +483,7 @@ plot_timing_summary <- function(diff_all, driver_list, LOH_MSI, type, cell_type,
   if (nrow(Freq) > 2 ) {
     
     Freq <- Freq %>% setNames(c("pathway", "time_period", "Freq")) 
-    type_sum <- as.data.frame(table(LOH_MSI$histology_abbreviation)) %>% filter(Var1 == !!type) %>% pull(Freq)
+    type_sum <- as.data.frame(table(clinical_data$histology_abbreviation)) %>% filter(Var1 == !!type) %>% pull(Freq)
     
     Sum <- as.data.frame(table(data_filter$pathway)) %>% 
       mutate(Type_sum = type_sum) %>% 
@@ -1013,9 +1094,9 @@ plot_forest_gg <- function(df, candidate_genes, min_clip = 0.1, max_clip = 10) {
     labs(x = "OR (95% CI)", y = NULL, title = NULL) +
     theme_minimal(base_size = 13) +
     theme(
-      axis.text.y = element_text(hjust = 1, size = 12,color = "black"),
-      axis.text.x = element_text(size = 12,color = "black"),
-      axis.title.x = element_text(size = 13, face = "bold", color = "black"),
+      axis.text.y = element_text(hjust = 1, size = 10,color = "black"),
+      axis.text.x = element_text(size = 12, color = "black"),
+      axis.title.x = element_text(size = 12, face = "bold", color = "black"),
       plot.margin = margin(5, 5, 5, 5)
     )
 }
@@ -1270,3 +1351,93 @@ plot_ciber <- function(ciber_long, histology_type, selected_pathways) {
     coord_cartesian(ylim = c(0, y_max + padding))
 }
 
+
+run_robust_logistic <- function(data) {
+  # Check if we have enough data and variation
+  if (nrow(data) < 10) {
+    return(tibble(
+      term = "Mutated", 
+      estimate = NA_real_, 
+      std.error = NA_real_,
+      statistic = NA_real_,
+      p.value = NA_real_,
+      conf.low = NA_real_, 
+      conf.high = NA_real_,
+      issue = "insufficient_sample_size"
+    ))
+  }
+  
+  # Check for variation in response and predictor
+  if (length(unique(data$Response_bin)) < 2 || 
+      length(unique(data$Mutated)) < 2) {
+    return(tibble(
+      term = "Mutated", 
+      estimate = NA_real_, 
+      std.error = NA_real_,
+      statistic = NA_real_,
+      p.value = NA_real_,
+      conf.low = NA_real_, 
+      conf.high = NA_real_,
+      issue = "no_variation"
+    ))
+  }
+  
+  # Try to fit the model
+  model <- tryCatch({
+    glm(Response_bin ~ Mutated + TMB, data = data, family = binomial)
+  }, error = function(e) {
+    return(list(error = as.character(e)))
+  }, warning = function(w) {
+    # Capture warnings but still return the model
+    model_result <- glm(Response_bin ~ Mutated + TMB, data = data, family = binomial)
+    attr(model_result, "warning") <- as.character(w)
+    return(model_result)
+  })
+  
+  # Check if model fitting failed
+  if (is.list(model) && !is.null(model$error)) {
+    return(tibble(
+      term = "Mutated", 
+      estimate = NA_real_, 
+      std.error = NA_real_,
+      statistic = NA_real_,
+      p.value = NA_real_,
+      conf.low = NA_real_, 
+      conf.high = NA_real_,
+      issue = paste("model_error:", model$error)
+    ))
+  }
+  
+  # Try to get confidence intervals with more robust method
+  result <- tryCatch({
+    # First try the standard approach
+    tidy_result <- tidy(model, exponentiate = TRUE)
+    
+    # Try to get confidence intervals
+    ci_result <- tryCatch({
+      confint(model, level = 0.95)
+    }, error = function(e) {
+      # If profile CI fails, use Wald CI
+      confint.default(model, level = 0.95)
+    })
+    
+    # Exponentiate CI for odds ratios
+    ci_result <- exp(ci_result)
+    
+    # Combine results
+    tidy_result$conf.low <- ci_result[rownames(ci_result) == "Mutated", 1]
+    tidy_result$conf.high <- ci_result[rownames(ci_result) == "Mutated", 2]
+    
+    return(tidy_result)
+    
+  }, error = function(e) {
+    # If everything fails, just return basic results without CI
+    tidy_basic <- tidy(model, exponentiate = TRUE)
+    tidy_basic$conf.low <- NA_real_
+    tidy_basic$conf.high <- NA_real_
+    tidy_basic$issue <- paste("ci_error:", as.character(e))
+    return(tidy_basic)
+  })
+  
+  return(result)
+}
