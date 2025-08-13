@@ -1,0 +1,11 @@
+*.bam filter=lfs diff=lfs merge=lfs -text
+*.fastq.gz filter=lfs diff=lfs merge=lfs -text
+*.rds filter=lfs diff=lfs merge=lfs -text
+*.bgen filter=lfs diff=lfs merge=lfs -text
+*.cram filter=lfs diff=lfs merge=lfs -text
+*.rda filter=lfs diff=lfs merge=lfs -text
+*.bed filter=lfs diff=lfs merge=lfs -text
+*.pgen filter=lfs diff=lfs merge=lfs -text
+*.vcf.gz filter=lfs diff=lfs merge=lfs -text
+*.tbi filter=lfs diff=lfs merge=lfs -text
+*.bai filter=lfs diff=lfs merge=lfs -text
