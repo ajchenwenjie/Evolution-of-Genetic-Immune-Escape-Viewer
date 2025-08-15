@@ -97,27 +97,57 @@ data_list <- load_data_files()
 list2env(data_list, envir = .GlobalEnv)
 MouseGene <- MouseToHuman_gene$id
 
-# Function to load cohort-specific data
-dynamic_cohort_data <- function(cohort) {
-  suffix <- switch(cohort,
-                   "PCAWG" = "PCAWG",
-                   "TCGA-OV" = "TCGA_OV",
-                   "POG570" = "POG570",
-                   "CRC-Prognosis" = "CRC_Prognosis", 
-                   "TNBC" = "TNBC", 
-                   "Glioma" = "Glioma",
-                   stop("Unknown cohort"))
+# Helper: read and merge diff_allgene parts (or fallback to single file)
+read_diff_all_parts <- function(cohort_path, suffix) {
+  files <- list.files(
+    cohort_path,
+    pattern   = paste0("^diff_all_", suffix, "_part.*\\.rds$"),
+    full.names = TRUE
+  )
   
-  cohort_path <- paste0(data_path, "/Cohorts/", suffix)
+  data.table::rbindlist(lapply(files, readRDS), use.names = TRUE, fill = TRUE)
+}
+
+read_diff_allgene_parts <- function(cohort_path, suffix) {
+  files <- list.files(
+    cohort_path,
+    pattern   = paste0("^diff_allgene_", suffix, "_part.*\\.rds$"),
+    full.names = TRUE
+  )
+
+  parts <- lapply(files, function(f) {
+    x <- readRDS(f)                 # each is a data.frame per your note
+    data.table::setDT(x)            # convert in-place for fast binding
+    x
+  })
+  
+  data.table::rbindlist(parts, use.names = TRUE, fill = TRUE)
+}
+
+
+# Updated dynamic_cohort_data
+dynamic_cohort_data <- function(cohort) {
+  suffix <- switch(
+    cohort,
+    "PCAWG"         = "PCAWG",
+    "TCGA-OV"       = "TCGA_OV",
+    "POG570"        = "POG570",
+    "CRC-Prognosis" = "CRC_Prognosis",
+    "TNBC"          = "TNBC",
+    "Glioma"        = "Glioma",
+    stop("Unknown cohort")
+  )
+  
+  cohort_path <- file.path(data_path, "Cohorts", suffix)
   
   list(
-    diff_all = readRDS(file.path(paste0(cohort_path, "/diff_all_", suffix, ".rds"))),
-    diff_allgene = readRDS(file.path(paste0(cohort_path, "/diff_allgene_", suffix, ".rds"))),
-    ciber_all = data.table::fread(file.path(cohort_path, paste0("/ciber_", suffix, ".csv"))),
-    maf_data = readRDS(paste0(cohort_path, "/maf_object_", suffix, ".rds")),
-    clinical_data = data.table::fread(file.path(cohort_path, paste0("/clinical_", suffix, ".csv"))),
-    surv_data = data.table::fread(file.path(cohort_path, paste0("/survival_", suffix, ".csv"))),
-    Freq_all = data.table::fread(file.path(cohort_path, paste0("/oncoMSS_", suffix, ".csv")))
+    diff_all     = read_diff_all_parts(cohort_path, suffix),
+    diff_allgene = read_diff_allgene_parts(cohort_path, suffix),
+    ciber_all    = data.table::fread(file.path(cohort_path, paste0("ciber_", suffix, ".csv"))),
+    maf_data     = readRDS(file.path(cohort_path, paste0("maf_object_", suffix, ".rds"))),
+    clinical_data= data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
+    surv_data    = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv"))),
+    Freq_all     = data.table::fread(file.path(cohort_path, paste0("oncoMSS_", suffix, ".csv")))
   )
 }
 
