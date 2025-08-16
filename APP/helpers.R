@@ -15,7 +15,7 @@ options(repos = c(CRAN = "https://cloud.r-project.org"))
 # Core packages that should be installed via renv or manifest
 required_packages <- c(
   "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
-  "stringr", "scales", "gridExtra", "ggsci", "patchwork", 
+  "stringr", "scales", "gridExtra", "ggsci",
   "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
   "survival", "survminer", "shinycssloaders", "grid", "fst", "tidyquant", "ggradar"
 )
