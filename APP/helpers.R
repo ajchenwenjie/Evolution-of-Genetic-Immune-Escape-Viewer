@@ -4,15 +4,12 @@ renv::activate()
 # Load packages
 library(shiny)
 library(rmarkdown)
-library(shinycssloaders)
 library(ggradar)
 library(gridExtra)
-library(ggthemes)
-library(patchwork)
 
 libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
           "broom", "ggrepel", "plotly", "survival", "survminer", 
-          "purrr", "grid", "fst", "shinycssloaders", "ggthemes", "patchwork")
+           "grid", "fst", "shinycssloaders", "ggthemes", "patchwork")
 lapply(libs, library, character.only = TRUE)
 
 # Conditional packages
