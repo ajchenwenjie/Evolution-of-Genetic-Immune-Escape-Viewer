@@ -1,16 +1,20 @@
 # helpers.R
-renv::activate()
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-# Load packages
-library(shiny)
-library(rmarkdown)
-library(ggradar)
-library(gridExtra)
+# Activate renv
+#renv::activate()
 
-libs <- c("dplyr", "ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
-          "broom", "ggrepel", "plotly", "survival", "survminer", 
-           "grid", "fst", "shinycssloaders", "ggthemes", "patchwork")
+# Load libraries
+# Define all the packages you want to load
+# Install missing packages and load them
+libs <- c(
+  "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
+   "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
+  "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
+  "survival", "survminer", "purrr", "shinycssloaders", "grid", "fst"
+)
 
+# Install missing packages and load them
 load_or_install <- function(pkg) {
   if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
     if (pkg == "maftools") {
@@ -24,48 +28,24 @@ load_or_install <- function(pkg) {
 }
 
 invisible(lapply(libs, load_or_install))
-lapply(libs, library, character.only = TRUE)
 
-# Conditional packages
-conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
- for (pkg in conditional_packages) {
-   if (requireNamespace(pkg, quietly = TRUE)) {
-    library(pkg, character.only = TRUE, quietly = TRUE)
-  }
+# For tidyquant: install if missing, but do NOT load
+if (!requireNamespace("tidyquant", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("mdancho84/tidyquant")
 }
 
-# Fallback for ggradar
 if (!requireNamespace("ggradar", quietly = TRUE)) {
-  ggradar <- function(...) {
-    warning("ggradar not available, using basic plot")
-    ggplot2::ggplot() + ggplot2::geom_blank()
-  }
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("ricardo-bion/ggradar")
 }
+
+base_path <- getwd()
+data_path <- file.path(base_path, "data")
 
 ##################################
 # Read Data
 ##################################
-base_path <- getwd()
-data_path <- file.path(base_path, "data")
-
-# Load data
-load_data_files <- function() {
-  list(
-    long_data = data.table::fread(file.path(data_path, "CRISPR/GeneMatrix_long.csv")),
-    CRISPR_pathways = data.table::fread(file.path(data_path, "CRISPR/C5BP_selected_list.csv")),
-    CRISPR_all = data.table::fread(file.path(data_path, "CRISPR/CRISPR_all.csv")),
-    ICB_merge = readRDS(file.path(data_path, "ICB/ICB_merge.rds")),
-    ICB_surv = readRDS(file.path(data_path, "ICB/ICB_survival.rds")),
-    data_crispr = data.table::fread(file.path(data_path, "CRISPR/C5BP_all.csv")),
-    MouseToHuman_gene = data.table::fread(file.path(data_path, "Refence_data/Referecen_MouseToHuman_gene.csv")),
-    driver_list = fread(file.path(data_path, "Refence_data/TableS1_compendium_mutational_drivers_clean.csv"))
-  )
-}
-
-data_list <- load_data_files()
-list2env(data_list, envir = .GlobalEnv)
-MouseGene <- MouseToHuman_gene$id
-
 # Load data
 load_data_files <- function() {
   list(
@@ -85,29 +65,64 @@ list2env(data_list, envir = .GlobalEnv)
 MouseGene <- MouseToHuman_gene$id
 
 # Function to load cohort-specific data
-dynamic_cohort_data <- function(cohort) {
-  suffix <- switch(cohort,
-                   "PCAWG" = "PCAWG",
-                   "TCGA-OV" = "TCGA_OV",
-                   "POG570" = "POG570",
-                   "CRC-Prognosis" = "CRC_Prognosis", 
-                   "TNBC" = "TNBC", 
-                   "Glioma" = "Glioma",
-                   stop("Unknown cohort"))
-  
-  cohort_path <- paste0(data_path, "/Cohorts/", suffix)
-  
-  list(
-    diff_all = readRDS(file.path(paste0(cohort_path, "/diff_all_", suffix, ".rds"))),
-    diff_allgene = readRDS(file.path(paste0(cohort_path, "/diff_allgene_", suffix, ".rds"))),
-    ciber_all = data.table::fread(file.path(cohort_path, paste0("/ciber_", suffix, ".csv"))),
-    maf_data = readRDS(paste0(cohort_path, "/maf_object_", suffix, ".rds")),
-    clinical_data = data.table::fread(file.path(cohort_path, paste0("/clinical_", suffix, ".csv"))),
-    surv_data = data.table::fread(file.path(cohort_path, paste0("/survival_", suffix, ".csv"))),
-    Freq_all = data.table::fread(file.path(cohort_path, paste0("/oncoMSS_", suffix, ".csv")))
+# ---- fst-only readers -------------------------------------------------------
+# Internal: read a set of part files deterministically and bind
+.read_fst_parts <- function(cohort_path, prefix, suffix, columns = NULL) {
+  # expected names: e.g., diff_all_PCAWG_part01.fst
+  files <- list.files(
+    cohort_path,
+    pattern    = paste0("^", prefix, "_", suffix, "_part\\d+\\.fst$"),
+    full.names = TRUE
   )
+  if (!length(files)) {
+    stop("No .fst parts found for ", prefix, " / ", suffix, " in: ", cohort_path)
+  }
+  
+  # natural order by the numeric partXX
+  ord <- order(as.integer(sub(".*_part(\\d+)\\.fst$", "\\1", basename(files))))
+  files <- files[ord]
+  
+  parts <- lapply(files, function(f) {
+    dt <- fst::read_fst(f, columns = columns)   # select columns if provided
+    as.data.table(dt)
+  })
+  rbindlist(parts, use.names = TRUE, fill = TRUE)
 }
 
+# Public wrappers
+read_diff_all_fst     <- function(cohort_path, suffix, columns = NULL)
+  .read_fst_parts(cohort_path, "diff_all",     suffix, columns)
+
+read_diff_allgene_fst <- function(cohort_path, suffix, columns = NULL)
+  .read_fst_parts(cohort_path, "diff_allgene", suffix, columns)
+
+dynamic_cohort_data <- function(cohort) {
+  suffix <- switch(
+    cohort,
+    "PCAWG"         = "PCAWG",
+    "TCGA-OV"       = "TCGA_OV",
+    "POG570"        = "POG570",
+    "CRC-Prognosis" = "CRC_Prognosis",
+    "TNBC"          = "TNBC",
+    "Glioma"        = "Glioma",
+    stop("Unknown cohort")
+  )
+  
+  cohort_path <- file.path(data_path, "Cohorts", suffix)
+  
+  list(
+    # fst-only reads; pass `columns = c("col1","col2",...)` if you want even faster loads
+    diff_all     = read_diff_all_fst(cohort_path, suffix),
+    diff_allgene = read_diff_allgene_fst(cohort_path, suffix),
+    
+    # unchanged bits
+    ciber_all     = data.table::fread(file.path(cohort_path, paste0("ciber_", suffix, ".csv"))),
+    maf_data      = readRDS(file.path(cohort_path, paste0("maf_object_", suffix, ".rds"))),
+    clinical_data = data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
+    surv_data     = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv"))),
+    Freq_all      = data.table::fread(file.path(cohort_path, paste0("oncoMSS_", suffix, ".csv")))
+  )
+}
 ##################################
 # Set cell type list
 ##################################
