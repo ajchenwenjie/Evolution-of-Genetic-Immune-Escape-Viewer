@@ -2,38 +2,39 @@
 # Set CRAN mirror explicitly (required on shinyapps.io)
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-libs <- c(
-  "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
-  "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
-  "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
-  "survival", "survminer", "shinycssloaders", "grid", "fst"
-)
+renv::activate()
 
-# Install missing packages and load them
-load_or_install <- function(pkg) {
-  if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-    if (pkg == "maftools") {
-      if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-      BiocManager::install(pkg, update = FALSE, ask = FALSE)
-    } else {
-      install.packages(pkg, dependencies = TRUE)
-    }
-    suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
+# Load packages
+library(shiny)
+library(rmarkdown)
+library(shinycssloaders)
+library(ggradar)
+library(gridExtra)
+library(ggthemes)
+library(patchwork)
+
+libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
+          "broom", "ggrepel", "plotly", "survival", "survminer", 
+          "purrr", "grid", "fst")
+lapply(libs, library, character.only = TRUE)
+
+# Conditional packages
+conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
+ for (pkg in conditional_packages) {
+   if (requireNamespace(pkg, quietly = TRUE)) {
+    library(pkg, character.only = TRUE, quietly = TRUE)
   }
 }
 
-invisible(lapply(libs, load_or_install))
-
-# For tidyquant: install if missing, but do NOT load
-if (!requireNamespace("tidyquant", quietly = TRUE)) {
-  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-  devtools::install_github("mdancho84/tidyquant")
-}
-
+# Fallback for ggradar
 if (!requireNamespace("ggradar", quietly = TRUE)) {
-  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-  devtools::install_github("ricardo-bion/ggradar")
+  ggradar <- function(...) {
+    warning("ggradar not available, using basic plot")
+    ggplot2::ggplot() + ggplot2::geom_blank()
+  }
 }
+
+#cat("Packages loaded successfully!\n")
 
 ##################################
 # Read Data
