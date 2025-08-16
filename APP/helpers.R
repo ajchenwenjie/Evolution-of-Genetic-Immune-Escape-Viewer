@@ -3,7 +3,7 @@
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 
 # Activate renv
-#renv::activate()
+renv::activate()
 
 # Load packages
 #library(shiny)
