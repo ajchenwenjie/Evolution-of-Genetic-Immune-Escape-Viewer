@@ -7,7 +7,7 @@ library(rmarkdown)
 library(ggradar)
 library(gridExtra)
 
-libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
+libs <- c("dplyr", "ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
           "broom", "ggrepel", "plotly", "survival", "survminer", 
            "grid", "fst", "shinycssloaders", "ggthemes", "patchwork")
 
@@ -22,6 +22,8 @@ load_or_install <- function(pkg) {
     suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
   }
 }
+
+invisible(lapply(libs, load_or_install))
 
 # Conditional packages
 conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
