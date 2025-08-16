@@ -14,9 +14,22 @@ library(gridExtra)
 #library(patchwork)
 
 libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
-          "broom", "ggrepel", "plotly", "survival", "survminer", "shinycssloaders", "ggthemes", "patchwork",
+          "broom", "ggrepel", "plotly", "survival", "survminer", "ggthemes", "patchwork",
           "purrr", "grid", "fst")
-lapply(libs, library, character.only = TRUE)
+
+# Install missing packages and load them
+load_or_install <- function(pkg) {
+  if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+    if (pkg == "maftools") {
+      if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+      BiocManager::install(pkg, update = FALSE, ask = FALSE)
+    } else {
+      install.packages(pkg, dependencies = TRUE)
+    }
+    suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
+  }
+}
+invisible(lapply(libs, load_or_install))
 
 # Conditional packages
 conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
@@ -33,6 +46,8 @@ if (!requireNamespace("ggradar", quietly = TRUE)) {
     ggplot2::ggplot() + ggplot2::geom_blank()
   }
 }
+
+
 
 #cat("Packages loaded successfully!\n")
 
