@@ -30,15 +30,15 @@ load_or_install <- function(pkg) {
 invisible(lapply(libs, load_or_install))
 
 # For tidyquant: install if missing, but do NOT load
-if (!requireNamespace("tidyquant", quietly = TRUE)) {
-  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-  devtools::install_github("mdancho84/tidyquant")
-}
+#if (!requireNamespace("tidyquant", quietly = TRUE)) {
+#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+#  devtools::install_github("mdancho84/tidyquant")
+#}
 
-if (!requireNamespace("ggradar", quietly = TRUE)) {
-  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-  devtools::install_github("ricardo-bion/ggradar")
-}
+#if (!requireNamespace("ggradar", quietly = TRUE)) {
+#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+#  devtools::install_github("ricardo-bion/ggradar")
+#}
 
 base_path <- getwd()
 data_path <- file.path(base_path, "data")
