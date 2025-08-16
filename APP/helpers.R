@@ -11,7 +11,7 @@ libs <- c(
   "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
    "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
   "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
-  "survival", "survminer", "purrr", "shinycssloaders", "grid", "fst"
+  "survival", "survminer", "shinycssloaders", "grid", "fst"
 )
 
 # Install missing packages and load them
