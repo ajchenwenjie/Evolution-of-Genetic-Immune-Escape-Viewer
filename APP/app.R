@@ -913,7 +913,7 @@ server <- function(input, output, session) {
   genes_to_plot <- get_selected_genes()
   req(length(genes_to_plot) > 0)
 
-  oncoplot(
+  maftools::oncoplot(
     maf = maf_obj(),
     genes = genes_to_plot,
     bgCol = "#efefef",
@@ -1224,13 +1224,13 @@ server <- function(input, output, session) {
   output$oncoplot_pos <- renderPlot({
     req(maf_obj())
     pos_top <- gstable_data() %>% arrange(pos.rank) %>% dplyr::slice(1:input$top_n) %>% pull(HumanGene)
-    oncoplot(maf = maf_obj(), genes = pos_top, bgCol = "#efefef", colors = cols, removeNonMutated = TRUE)
+    maftools::oncoplot(maf = maf_obj(), genes = pos_top, bgCol = "#efefef", colors = cols, removeNonMutated = TRUE)
   }, res = 80)
   
   output$oncoplot_neg <- renderPlot({
     req(maf_obj())
     neg_top <- gstable_data() %>% arrange(neg.rank) %>% dplyr::slice(1:input$top_n) %>% pull(HumanGene)
-    oncoplot(maf = maf_obj(), genes = neg_top, bgCol = "#efefef", colors = cols, removeNonMutated = TRUE)
+    maftools::oncoplot(maf = maf_obj(), genes = neg_top, bgCol = "#efefef", colors = cols, removeNonMutated = TRUE)
   }, res = 80)
   
   # Gene Timing -- make the density plot for distribution of mutation timing for the top-rank regulators (positive/negative) by the CRISPR studies
