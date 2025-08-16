@@ -7,27 +7,28 @@ options(repos = c(CRAN = "https://cloud.r-project.org"))
 # Load libraries
 # Define all the packages you want to load
 # Install missing packages and load them
-libs <- c(
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+
+# Load required libraries (assume they are pre-installed)
+# Remove installation logic - packages should be installed beforehand
+
+# Core packages that should be installed via renv or manifest
+required_packages <- c(
   "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
-   "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
-  "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
-  "survival", "survminer", "shinycssloaders", "grid", "fst"
+  "stringr", "scales", "gridExtra", "ggsci", "patchwork", 
+  "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
+  "survival", "survminer", "purrr", "shinycssloaders", "grid", "fst"
 )
 
-# Install missing packages and load them
-load_or_install <- function(pkg) {
+# Load packages with error handling
+load_package <- function(pkg) {
   if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-    if (pkg == "maftools") {
-      if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-      BiocManager::install(pkg, update = FALSE, ask = FALSE)
-    } else {
-      install.packages(pkg, dependencies = TRUE)
-    }
-    suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
+    stop(paste("Package", pkg, "not found. Please install it before deployment."))
   }
 }
 
-invisible(lapply(libs, load_or_install))
+# Load all required packages
+invisible(lapply(required_packages, load_package))
 
 # For tidyquant: install if missing, but do NOT load
 #if (!requireNamespace("tidyquant", quietly = TRUE)) {
