@@ -24,58 +24,23 @@ load_or_install <- function(pkg) {
 
 invisible(lapply(libs, load_or_install))
 
-# Fallback for ggradar
-#if (!requireNamespace("ggradar", quietly = TRUE)) {
-#  ggradar <- function(...) {
-#    warning("ggradar not available, using basic plot")
-#    ggplot2::ggplot() + ggplot2::geom_blank()
-#  }
-#}
-
-#cat("Packages loaded successfully!\n")
-
-# Load libraries
-# Define all the packages you want to load
-# Install missing packages and load them
-#libs <- c(
-#  "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
-#   "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
-#  "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
-#  "survival", "survminer", "shinycssloaders", "grid"
-#)
-
-# Install missing packages and load them
-#load_or_install <- function(pkg) {
-#  if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
-#    if (pkg == "maftools") {
-#      if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
-#      BiocManager::install(pkg, update = FALSE, ask = FALSE)
-#    } else {
-#      install.packages(pkg, dependencies = TRUE)
-#    }
-#    suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
-#  }
-#}
-
-#invisible(lapply(libs, load_or_install))
-
 # For tidyquant: install if missing, but do NOT load
-#if (!requireNamespace("tidyquant", quietly = TRUE)) {
-#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-#  devtools::install_github("mdancho84/tidyquant")
-#}
+if (!requireNamespace("tidyquant", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("mdancho84/tidyquant")
+}
 
-#if (!requireNamespace("ggradar", quietly = TRUE)) {
-#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-#  devtools::install_github("ricardo-bion/ggradar")
-#}
-
-base_path <- getwd()
-data_path <- file.path(base_path, "data")
+if (!requireNamespace("ggradar", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("ricardo-bion/ggradar")
+}
 
 ##################################
 # Read Data
 ##################################
+base_path <- getwd()
+data_path <- file.path(base_path, "data")
+
 # Load data
 load_data_files <- function() {
   list(
@@ -94,35 +59,42 @@ data_list <- load_data_files()
 list2env(data_list, envir = .GlobalEnv)
 MouseGene <- MouseToHuman_gene$id
 
-# Helper: read and merge diff_allgene parts (or fallback to single file)
-read_diff_all_parts <- function(cohort_path, suffix) {
-  files <- list.files(
-    cohort_path,
-    pattern   = paste0("^diff_all_", suffix, "_part.*\\.rds$"),
-    full.names = TRUE
-  )
-  
-  data.table::rbindlist(lapply(files, readRDS), use.names = TRUE, fill = TRUE)
+# ---- fst-only readers -------------------------------------------------------
+if (!requireNamespace("fst", quietly = TRUE)) {
+  stop("Package 'fst' is required. Install it with install.packages('fst').")
 }
+library(data.table)
 
-read_diff_allgene_parts <- function(cohort_path, suffix) {
+# Internal: read a set of part files deterministically and bind
+.read_fst_parts <- function(cohort_path, prefix, suffix, columns = NULL) {
+  # expected names: e.g., diff_all_PCAWG_part01.fst
   files <- list.files(
     cohort_path,
-    pattern   = paste0("^diff_allgene_", suffix, "_part.*\\.rds$"),
+    pattern    = paste0("^", prefix, "_", suffix, "_part\\d+\\.fst$"),
     full.names = TRUE
   )
-
+  if (!length(files)) {
+    stop("No .fst parts found for ", prefix, " / ", suffix, " in: ", cohort_path)
+  }
+  
+  # natural order by the numeric partXX
+  ord <- order(as.integer(sub(".*_part(\\d+)\\.fst$", "\\1", basename(files))))
+  files <- files[ord]
+  
   parts <- lapply(files, function(f) {
-    x <- readRDS(f)                 # each is a data.frame per your note
-    data.table::setDT(x)            # convert in-place for fast binding
-    x
+    dt <- fst::read_fst(f, columns = columns)   # select columns if provided
+    as.data.table(dt)
   })
-  
-  data.table::rbindlist(parts, use.names = TRUE, fill = TRUE)
+  rbindlist(parts, use.names = TRUE, fill = TRUE)
 }
 
+# Public wrappers
+read_diff_all_fst     <- function(cohort_path, suffix, columns = NULL)
+  .read_fst_parts(cohort_path, "diff_all",     suffix, columns)
 
-# Updated dynamic_cohort_data
+read_diff_allgene_fst <- function(cohort_path, suffix, columns = NULL)
+  .read_fst_parts(cohort_path, "diff_allgene", suffix, columns)
+
 dynamic_cohort_data <- function(cohort) {
   suffix <- switch(
     cohort,
@@ -138,13 +110,16 @@ dynamic_cohort_data <- function(cohort) {
   cohort_path <- file.path(data_path, "Cohorts", suffix)
   
   list(
-    diff_all     = read_diff_all_parts(cohort_path, suffix),
-    diff_allgene = read_diff_allgene_parts(cohort_path, suffix),
-    ciber_all    = data.table::fread(file.path(cohort_path, paste0("ciber_", suffix, ".csv"))),
-    maf_data     = readRDS(file.path(cohort_path, paste0("maf_object_", suffix, ".rds"))),
-    clinical_data= data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
-    surv_data    = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv"))),
-    Freq_all     = data.table::fread(file.path(cohort_path, paste0("oncoMSS_", suffix, ".csv")))
+    # fst-only reads; pass `columns = c("col1","col2",...)` if you want even faster loads
+    diff_all     = read_diff_all_fst(cohort_path, suffix),
+    diff_allgene = read_diff_allgene_fst(cohort_path, suffix),
+    
+    # unchanged bits
+    ciber_all     = data.table::fread(file.path(cohort_path, paste0("ciber_", suffix, ".csv"))),
+    maf_data      = readRDS(file.path(cohort_path, paste0("maf_object_", suffix, ".rds"))),
+    clinical_data = data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
+    surv_data     = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv"))),
+    Freq_all      = data.table::fread(file.path(cohort_path, paste0("oncoMSS_", suffix, ".csv")))
   )
 }
 
