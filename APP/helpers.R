@@ -11,10 +11,10 @@ library(rmarkdown)
 library(ggradar)
 library(gridExtra)
 #library(ggthemes)
-library(patchwork)
+#library(patchwork)
 
 libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
-          "broom", "ggrepel", "plotly", "survival", "survminer", "shinycssloaders", "ggthemes",
+          "broom", "ggrepel", "plotly", "survival", "survminer", "shinycssloaders", "ggthemes", "patchwork",
           "purrr", "grid", "fst")
 lapply(libs, library, character.only = TRUE)
 
