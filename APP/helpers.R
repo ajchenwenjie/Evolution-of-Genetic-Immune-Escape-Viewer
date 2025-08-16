@@ -17,7 +17,7 @@ required_packages <- c(
   "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
   "stringr", "scales", "gridExtra", "ggsci", "patchwork", 
   "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
-  "survival", "survminer", "shinycssloaders", "grid", "fst"
+  "survival", "survminer", "shinycssloaders", "grid", "fst", "tidyquant", "ggradar"
 )
 
 # Load packages with error handling
