@@ -7,13 +7,13 @@ renv::activate()
 # Load packages
 library(shiny)
 library(rmarkdown)
-library(shinycssloaders)
+#library(shinycssloaders)
 library(ggradar)
 library(gridExtra)
 library(ggthemes)
 library(patchwork)
 
-libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
+libs <- c("shinycssloaders","ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
           "broom", "ggrepel", "plotly", "survival", "survminer", 
           "purrr", "grid", "fst")
 lapply(libs, library, character.only = TRUE)
