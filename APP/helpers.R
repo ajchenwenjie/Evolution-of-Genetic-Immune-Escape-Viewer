@@ -2,20 +2,50 @@
 # Set CRAN mirror explicitly (required on shinyapps.io)
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-renv::activate()
+# Activate renv
+#renv::activate()
 
 # Load packages
-library(shiny)
-library(rmarkdown)
+#library(shiny)
+#library(rmarkdown)
 #library(shinycssloaders)
-library(ggradar)
-library(gridExtra)
+#library(ggradar)
+#library(gridExtra)
 #library(ggthemes)
 #library(patchwork)
 
-libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
-          "broom", "ggrepel", "plotly", "survival", "survminer", "shinycssloaders", "ggthemes", "patchwork",
-          "purrr", "grid", "fst")
+#libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
+#          "broom", "ggrepel", "plotly", "survival", "survminer", 
+#          "purrr", "grid")
+#lapply(libs, library, character.only = TRUE)
+
+# Conditional packages
+#conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
+#for (pkg in conditional_packages) {
+#  if (requireNamespace(pkg, quietly = TRUE)) {
+#    library(pkg, character.only = TRUE, quietly = TRUE)
+#  }
+#}
+
+# Fallback for ggradar
+#if (!requireNamespace("ggradar", quietly = TRUE)) {
+#  ggradar <- function(...) {
+#    warning("ggradar not available, using basic plot")
+#    ggplot2::ggplot() + ggplot2::geom_blank()
+#  }
+#}
+
+#cat("Packages loaded successfully!\n")
+
+# Load libraries
+# Define all the packages you want to load
+# Install missing packages and load them
+libs <- c(
+  "broom", "shiny", "ggplot2", "dplyr", "tidyr", "data.table", 
+   "stringr", "ggradar", "scales", "gridExtra", "ggsci", "patchwork", 
+  "maftools", "ggdist", "ggthemes", "ggrepel", "plotly", "textshape", 
+  "survival", "survminer", "purrr", "shinycssloaders", "grid", ""
+)
 
 # Install missing packages and load them
 load_or_install <- function(pkg) {
@@ -29,25 +59,19 @@ load_or_install <- function(pkg) {
     suppressWarnings(require(pkg, character.only = TRUE, quietly = TRUE))
   }
 }
+
 invisible(lapply(libs, load_or_install))
 
-# Conditional packages
-conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
- for (pkg in conditional_packages) {
-   if (requireNamespace(pkg, quietly = TRUE)) {
-    library(pkg, character.only = TRUE, quietly = TRUE)
-  }
+# For tidyquant: install if missing, but do NOT load
+if (!requireNamespace("tidyquant", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("mdancho84/tidyquant")
 }
 
-# Fallback for ggradar
 if (!requireNamespace("ggradar", quietly = TRUE)) {
-  ggradar <- function(...) {
-    warning("ggradar not available, using basic plot")
-    ggplot2::ggplot() + ggplot2::geom_blank()
-  }
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("ricardo-bion/ggradar")
 }
-
-
 
 #cat("Packages loaded successfully!\n")
 
