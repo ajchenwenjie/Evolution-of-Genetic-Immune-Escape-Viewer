@@ -24,6 +24,7 @@ load_or_install <- function(pkg) {
 }
 
 invisible(lapply(libs, load_or_install))
+lapply(libs, library, character.only = TRUE)
 
 # Conditional packages
 conditional_packages <- c("ggdist", "ggsci", "textshape", "maftools")
