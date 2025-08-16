@@ -14,7 +14,7 @@ library(gridExtra)
 #library(patchwork)
 
 libs <- c("ggplot2", "dplyr", "tidyr", "data.table", "stringr", "scales",
-          "broom", "ggrepel", "plotly", "survival", "survminer", "ggthemes", "patchwork",
+          "broom", "ggrepel", "plotly", "survival", "survminer", "shinycssloaders", "ggthemes", "patchwork",
           "purrr", "grid", "fst")
 
 # Install missing packages and load them
