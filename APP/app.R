@@ -10,6 +10,14 @@ data_path <- file.path(base_path, "data")
 # Source helper script
 source(file.path(base_path, "helpers.R"), local = TRUE)
 
+cell_type_image_map <- c(
+  "MHC-I Regulators" = "celltypes/mhc1.png",
+  "T-cell killing"   = "celltypes/tcell.png",
+  "NK-cell killing"  = "celltypes/nk.png",
+  "Macrophage killing" = "celltypes/macrophage.png",
+  "gdT-cell killing" = "celltypes/gdt.png"
+)
+
 # UI code
 ui <- tagList(
   navbarPage("Evolution of Genetic Immune Escape Viewer",
@@ -56,35 +64,44 @@ ui <- tagList(
                         )
                       )
              ),
-             tabPanel(
-               "Immunomodulatory Pathways",
-               sidebarLayout(
-                 sidebarPanel(
-                   width = 2,
-                   selectInput(
-                     "cell_type",
-                     "Immunity Scenarios",
-                     choices = names(cell_type_files),
-                     selected = "MHC-I Regulators"
-                   ),
-                   selectInput(
-                     "immuno_regulators",
-                     "Select Regulator Type",
-                     choices = c("Positive" = "pos", "Negative" = "neg"),
-                     selected = "pos"
-                   ),
-                   numericInput("immuno_n", "Number of Top Pathways", value = 10, min = 5, max = 50),
-                   helpText("This sets how many top-ranked pathways (based on frequency) will be shown in the plot.")
-                 ),
-                 mainPanel(
-                   width = 10,
-                   uiOutput("immuno_pathway_plot_ui"),
-                   br(),
-                   uiOutput("pathway_interpretation")
-                 )
-               )
-             ),
-             tabPanel(
+             tabPanel("Immunomodulatory Pathways",
+                      sidebarLayout(
+                        sidebarPanel(
+                          width = 2,
+                          # Hidden selectInput - controlled by image gallery
+                          div(style = "display: none;",
+                              selectInput("cell_type",
+                                          "Immunity Scenarios", 
+                                          choices = names(cell_type_files),
+                                          selected = "MHC-I Regulators")),
+                          selectInput("immuno_regulators",
+                                      "Select Regulator Type", 
+                                      choices = c("Positive" = "pos", "Negative" = "neg"),
+                                      selected = "pos"),
+                          numericInput("immuno_n", "Number of Top Pathways", value = 10, min = 5, max = 50)),
+                        mainPanel(
+                          width = 10,
+                          uiOutput("cell_type_gallery"),
+                          tags$hr(),
+                          uiOutput("immuno_pathway_plot_ui"),
+                          br(),
+                          uiOutput("pathway_interpretation")
+                          )),
+                      tags$head(
+                      tags$style(HTML(".gallery-grid { 
+                      display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;}
+                      .gallery-card {
+                      border: 2px solid #ddd; border-radius: 10px; padding: 15px; text-align: center;
+                      background: #f9f9f9; cursor: pointer; transition: all 0.2s;
+                      }
+                      .gallery-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+                      .gallery-card.selected { border-color: #007bff; background: #e7f3ff; }
+                      .gallery-card img { width: 180px; height: 100px; object-fit: contain; }
+                      .gallery-title { margin-top: 10px; font-weight: bold; }
+                                      "))
+                      )
+          ),
+          tabPanel(
                "Select the WGS Datasetss",
                sidebarLayout(
                  sidebarPanel(
@@ -297,7 +314,27 @@ ui <- tagList(
                           tags$li("Survival: KM plots for timing-based groups"),
                           tags$li("ICB Response: Forest plots by ICB response"),
                           tags$li("ICB Survival: KM plots for ICB survival")
-                        ),                        
+                        ),
+                        
+                        h4("6. Exploring Your Study"),
+                        tags$b("Controls:"),
+                        tags$ul(
+                          tags$li("Upload .txt File"),
+                          tags$li("Top N Genes Slider"),
+                          tags$li("Regulator Type Selection"),
+                          tags$li("Therapy and Cancer Type Dropdowns")
+                        ),
+                        tags$b("Sub-tabs:"),
+                        tags$ul(
+                          tags$li("CRISPR Ranking: Plots of positive/negative CRISPR ranks"),
+                          tags$li("Mutation Frequency: Oncoplots for top genes"),
+                          tags$li("Gene Timing: Raincloud plots for CRISPR-ranked regulators"),
+                          tags$li("Pathway Timing: Bar plots of mutation timing"),
+                          tags$li("Survival: KM plots for timing groups"),
+                          tags$li("ICB Response: Forest plots for ICB response"),
+                          tags$li("ICB Survival: KM plots for ICB survival")
+                        ),
+                        
                         h3("Additional Tips"),
                         tags$ul(
                           tags$li("Use dropdowns to filter cancer or immune cell type"),
@@ -331,93 +368,100 @@ server <- function(input, output, session) {
   ## Page 2
   ###################################################
   ## Page2 -- Pathway Summary
-  # Load CRISPR_all data
-  filtered_data <- reactive({
-    CRISPR_all %>% filter(Celltype == cell_type_files[[input$cell_type]])
+  output$cell_type_gallery <- renderUI({
+    current_selection <- input$cell_type
+    
+    cards <- lapply(names(cell_type_files), function(label) {
+      cell_code <- cell_type_files[[label]]
+      is_selected <- identical(current_selection, label)
+      
+      div(
+        class = paste("gallery-card", if(is_selected) "selected"),
+        onclick = sprintf("Shiny.setInputValue('gallery_click', '%s')", label),
+        img(src = paste0(cell_code, ".png"), alt = label),
+        div(class = "gallery-title", label)
+      )
+    })
+    
+    div(class = "gallery-grid", cards)
   })
-
-  # Calculate the frequencies of studies reporting the pathways
+  
+  # Simple click handler
+  observeEvent(input$gallery_click, {
+    updateSelectInput(session, "cell_type", selected = input$gallery_click)
+  })
+  
+  # Rest of your existing reactive functions (unchanged)
   study_count <- reactive({
     req(input$cell_type, input$immuno_regulators)
     cell_type_code <- cell_type_files[[input$cell_type]]
     reg <- input$immuno_regulators
     
-    data_crispr <- data_crispr %>%
-      filter(celltype == !!cell_type_code, regulators == !!reg)
+    df <- data_crispr %>%
+      dplyr::filter(celltype == cell_type_code, regulators == reg)
     
-    length(base::unique(data_crispr$Study))
+    length(unique(df$Study))
   })
   
-  # Set dynamic height and width for the plots
   output$immuno_pathway_plot_ui <- renderUI({
-    req(input$immuno_n)
-    
-    base_width <- 600      
-    extra_width <- 20   
-    width_cap <- 1200
-    
-    base_height <- 450
-    extra_height <- 30 
-    height_cap <- 1200
+    req(input$immuno_n, input$cell_type)
     
     study_n <- study_count()
-    total_width <- min(base_width + extra_width * study_n, width_cap)
+    if (study_n == 0) {
+      return(h4("No data available for this selection", style = "text-align: center; color: #666; margin-top: 50px;"))
+    }
     
-    pathway_n <- input$immuno_n
-    total_height <- min(base_height + extra_height * pathway_n, height_cap)
+    total_width <- min(600 + 20 * study_n, 1200)
+    total_height <- min(450 + 30 * input$immuno_n, 1200)
     
-    plotlyOutput("immuno_pathway_plot",
-                 height = paste0(total_height, "px"),
-                 width = paste0(total_width, "px"))
+    plotlyOutput("immuno_pathway_plot", height = paste0(total_height, "px"), width = paste0(total_width, "px"))
   })
   
-  # Plot the pathways with high frequencies
   output$immuno_pathway_plot <- renderPlotly({
     req(input$cell_type, input$immuno_regulators, input$immuno_n)
     
     cell_type_code <- cell_type_files[[input$cell_type]]
     reg <- input$immuno_regulators
     num <- input$immuno_n
-    textcol <- "black"
     
-    # Read data
-    data_crispr <- data_crispr %>%
-      filter(celltype == !!cell_type_code, regulators == !!reg)
+    # Filter data
+    df <- data_crispr %>%
+      dplyr::filter(celltype == cell_type_code, regulators == reg)
     
-    # Prepare plot
-    plot_freq <- data_crispr %>%
+    req(nrow(df) > 0)
+    
+    plot_freq <- df %>%
       arrange(desc(Freq), desc(`-log10(Padj)`)) %>%
       distinct(Description, .keep_all = TRUE) %>%
-      dplyr::slice_head(n = num) %>%
-      dplyr::select(ID, Description, Freq)
+      slice_head(n = num) %>%
+      select(ID, Description, Freq)
     
     plot_order <- plot_freq %>% arrange(Freq) %>% pull(Description)
     
-    plot_data <- inner_join(plot_freq, data_crispr, by = c("ID", "Description")) %>%
+    plot_data <- inner_join(plot_freq, df, by = c("ID", "Description")) %>%
       mutate(
         tooltip_text = paste0(
           "Genes: ", geneName, "<br>",
-          "Padj: ", format(p.adjust, scientific = TRUE, digits = 3), "<br>",
+          "Padj: ", format(p.adjust, scientific = TRUE, digits = 3), "<br>", 
           "NES: ", round(NES, 1)
         ),
         Description = factor(Description, levels = plot_order)
       )
     
-    P <- ggplot(plot_data, aes(x = Study, y = Description, size = `-log10(Padj)`, text = tooltip_text)) +
+    p <- ggplot(plot_data, aes(x = Study, y = Description, size = `-log10(Padj)`, text = tooltip_text)) +
       geom_point(color = "#4393C3", alpha = 0.8) +
-      labs(size = "-Log10(Padj)", title = "Pathway Enrichment", x = "", y = "") +
+      labs(size = "-Log10(Padj)", title = "", x = "", y = "") +
       theme_minimal() +
       theme(
-        axis.text.x = element_text(angle = 60, hjust = 1, size = 10, colour = textcol),
-        axis.text.y = element_text(size = 10, colour = textcol),
+        axis.text.x = element_text(angle = 30, hjust = 1, size = 10),
+        axis.text.y = element_text(size = 10),
         axis.line = element_line(color = "black"),
         axis.ticks = element_line(color = "black"),
         plot.margin = margin(0.7, 0.4, 0.1, 0.2, "cm")
       )
     
-    ggplotly(P, tooltip = "text") 
+    ggplotly(p, tooltip = "text")
   })
-  
   
   ###################################################
   ## Page 3 -- Select the WGS Datasets
