@@ -33,15 +33,15 @@ load_or_install <- function(pkg) {
 invisible(lapply(libs, load_or_install))
 
 # For tidyquant: install if missing, but do NOT load
-#if (!requireNamespace("tidyquant", quietly = TRUE)) {
-#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-#  devtools::install_github("mdancho84/tidyquant")
-#}
+if (!requireNamespace("tidyquant", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("mdancho84/tidyquant")
+}
 
-#if (!requireNamespace("ggradar", quietly = TRUE)) {
-#  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
-#  devtools::install_github("ricardo-bion/ggradar")
-#}
+if (!requireNamespace("ggradar", quietly = TRUE)) {
+  if (!requireNamespace("devtools", quietly = TRUE)) install.packages("devtools")
+  devtools::install_github("ricardo-bion/ggradar")
+}
 
 base_path <- getwd()
 data_path <- file.path(base_path, "data")
@@ -462,7 +462,10 @@ plot_timing_summary <- function(diff_all, driver_list, clinical_data, type, cell
     inner_join(., data_all, by = c("histology_abbreviation", "pathway")) %>%
     mutate(n_base = 1,
            percent_base = n_base/count,
-           timing_bin = cut(late_ratio, breaks = range_breaks, include.lowest = TRUE)) %>% 
+           n_late = 250 * late_ratio,
+           n_undetermined = 250 * undetemined_ratio,
+           ratio_plot = (n_late + n_undetermined/2) / 250,
+           timing_bin = cut(ratio_plot, breaks = range_breaks, include.lowest = TRUE)) %>% 
     arrange(desc(count))
   
   data_filter <- data_filter1 %>% filter(timing_cat != "Undetermined") %>%
@@ -826,7 +829,10 @@ plot_timing_bar_by_genes <- function(selected_genes, diff_data, type_list, colum
       inner_join(., df_Reg, by = c("histology_abbreviation", "pathway")) %>%
       mutate(n_base = 1,
              percent_base = n_base/count,
-             timing_bin = cut(late_ratio, breaks = range_breaks, include.lowest = TRUE)) %>%
+             n_late = 250 * late_ratio,
+             n_undetermined = 250 * undetemined_ratio,
+             ratio_plot = (n_late + n_undetermined/2) / 250,
+             timing_bin = cut(ratio_plot, breaks = range_breaks, include.lowest = TRUE)) %>% 
       arrange(desc(count)) %>%
       filter(count > 4)
     
