@@ -78,15 +78,14 @@ ui <- tagList(
                                       "Select Regulator Type", 
                                       choices = c("Positive" = "pos", "Negative" = "neg"),
                                       selected = "pos"),
-                          numericInput("immuno_n", "Number of Top Pathways", value = 10, min = 5, max = 50)),
-                        mainPanel(
-                          width = 10,
+                      numericInput("immuno_n", "Number of Top Pathways", value = 10, min = 5, max = 50)),
+                      mainPanel(
+                          width = 8,
                           uiOutput("cell_type_gallery"),
                           tags$hr(),
                           uiOutput("immuno_pathway_plot_ui"),
                           br(),
-                          uiOutput("pathway_interpretation")
-                          )),
+                          uiOutput("pathway_interpretation"))),
                       tags$head(
                       tags$style(HTML(".gallery-grid { 
                       display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;}
@@ -96,7 +95,7 @@ ui <- tagList(
                       }
                       .gallery-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
                       .gallery-card.selected { border-color: #007bff; background: #e7f3ff; }
-                      .gallery-card img { width: 180px; height: 100px; object-fit: contain; }
+                      .gallery-card img { width: 160px; height: 100px; object-fit: contain; }
                       .gallery-title { margin-top: 10px; font-weight: bold; }
                                       "))
                       )
@@ -216,7 +215,13 @@ ui <- tagList(
                  mainPanel(
                    tabsetPanel(
                      id = "gene_tab_selected",
-                     tabPanel("Mutation Frequency", withSpinner(uiOutput("oncoplot_ui")), br(), uiOutput("mutation_freq_interpretation")),
+                     tabPanel("Mutation Frequency", 
+                              div(class = "hcenter", withSpinner(uiOutput("oncoplot_ui"))), 
+                              br(),
+                              div(style = "text-align: center;",
+                                  downloadButton("download_oncoplot", "Download Plot", class = "btn-sm btn-outline-primary")),
+                              br(), 
+                              uiOutput("mutation_freq_interpretation")),
                      tabPanel("Gene Timing", withSpinner(uiOutput("timing_plot_singlegene_ui")), br(), uiOutput("gene_timing_interpretation")),
                      tabPanel("Pathway Timing", withSpinner(plotOutput("timing_plot_gene", width = "500px", height = "500px")), br(), uiOutput("pathway_timing_gene_interpretation")),
                      tabPanel("Survival", withSpinner(plotOutput("timing_survival_plot_genelist", height = "500px", width = "450px")), br(), uiOutput("timingsurvival_gene_interpretation")),
@@ -411,8 +416,8 @@ server <- function(input, output, session) {
       return(h4("No data available for this selection", style = "text-align: center; color: #666; margin-top: 50px;"))
     }
     
-    total_width <- min(600 + 20 * study_n, 1200)
-    total_height <- min(450 + 30 * input$immuno_n, 1200)
+    total_width <- min(600 + 30  * study_n, 2000)
+    total_height <- min(600 + 20 * input$immuno_n, 1200)
     
     plotlyOutput("immuno_pathway_plot", height = paste0(total_height, "px"), width = paste0(total_width, "px"))
   })
@@ -436,28 +441,38 @@ server <- function(input, output, session) {
       slice_head(n = num) %>%
       select(ID, Description, Freq)
     
-    plot_order <- plot_freq %>% arrange(Freq) %>% pull(Description)
+    plot_order <- plot_freq %>% arrange(desc(Freq)) %>% pull(Description)
     
     plot_data <- inner_join(plot_freq, df, by = c("ID", "Description")) %>%
       mutate(
         tooltip_text = paste0(
           "Genes: ", geneName, "<br>",
-          "Padj: ", format(p.adjust, scientific = TRUE, digits = 3), "<br>", 
+          "FDR: ", format(p.adjust, scientific = TRUE, digits = 3), "<br>", 
           "NES: ", round(NES, 1)
         ),
         Description = factor(Description, levels = plot_order)
       )
     
-    p <- ggplot(plot_data, aes(x = Study, y = Description, size = `-log10(Padj)`, text = tooltip_text)) +
-      geom_point(color = "#4393C3", alpha = 0.8) +
-      labs(size = "-Log10(Padj)", title = "", x = "", y = "") +
+    p <- ggplot(plot_data, aes(x = Description, y =  Study_2, size = `-log10(Padj)`, text = tooltip_text)) +
+      geom_point(
+        aes(fill = Cell_line),
+        shape = 21,
+        colour = "black",
+        stroke = 0.3,
+        alpha = 0.8
+      ) +
+      labs(size = "", title = "", x = "", y = "", fill = "Cancer Type") +
       theme_minimal() +
+      scale_fill_manual(values = cellline_colors) +
       theme(
-        axis.text.x = element_text(angle = 30, hjust = 1, size = 10),
-        axis.text.y = element_text(size = 10),
-        axis.line = element_line(color = "black"),
+        axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5, size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"),
+        axis.line = element_line(color = "black", size = 0.05),
         axis.ticks = element_line(color = "black"),
-        plot.margin = margin(0.7, 0.4, 0.1, 0.2, "cm")
+        plot.margin = margin(0.7, 0.4, 0.1, 0.2, "cm"),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+        legend.title = element_text(size = 10),
+        legend.text  = element_text(size = 8)
       )
     
     ggplotly(p, tooltip = "text")
