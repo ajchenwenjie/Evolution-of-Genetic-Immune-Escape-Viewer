@@ -178,6 +178,20 @@ cell_type_files <- c(
   "GDT-cell Killing" = "GammadeltaTcells"
 )
 
+cellline_colors <- c(
+  "AML"             = "#000C95",  # placeholder (gray, since not in legend)
+  "B cell lymphoma" = "#7876B1FF",  # placeholder
+  "Breast cancer"   = "#20854EFF",
+  "CML"             = "#CC347C",
+  "CRC"             = "#2FACCF",
+  "Gastric cancer"  = "#E18727FF",  # placeholder
+  "GBM"             = "#6D3000",
+  "GSC"             = "#999933",  # placeholder
+  "Melanoma"        = "#1E90FF",
+  "PDAC"            = "#7A378B",
+  "Renal cancer"    = "#BFEFFF"
+)
+
 cibercom_cols <- c("T_cells_CD8", "T_cells_CD4", "B_cells", "NK_cells", "Macrophage", "Dendritic_cells", "Mast_cells", "Neutrophils", "Eosinophils")
 
 ##################################
