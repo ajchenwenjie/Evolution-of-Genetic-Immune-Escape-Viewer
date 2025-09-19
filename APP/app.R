@@ -1097,7 +1097,6 @@ server <- function(input, output, session) {
         base::unique()
     } else {
       c(
-        "ACHE", "AMOT", "CDK5R1", "CDK6", "CELSR1", "CNTFR", "CRMP1", "DPYSL2",
         "ETS2", "GLI1", "ADGRG1", "HEY1", "HEY2", "L1CAM", "LDB1", "MYH9", "NF1",
         "NKX6-1", "NRCAM", "NRP1", "TP53"
       )
@@ -1448,6 +1447,15 @@ server <- function(input, output, session) {
   })
   
   ## Page 2
+  output$rra_interpretation <- renderUI({
+    HTML(
+      paste0(
+        "<p><strong>Interpretation:</strong> The Dot plot shows overall ranking of the regulators acorss CRIPSR screen. Top 10 regulators and genes of interst are shown with labels.",
+        "<br> The pos|rank or neg|rank were obtained from each studies and combined by using robust rank aggregation (RRA). (PMID: 22247279)"
+      )
+    )
+  })
+  
   output$pathway_interpretation <- renderUI({
     HTML(
       paste0(
@@ -1553,11 +1561,11 @@ server <- function(input, output, session) {
     req(cohort_data()$maf_data)
     HTML(
       paste0(
-        "<p><strong>Interpretation:</strong> The Kaplan-Meier (KM) plot shows survival outcomes stratified by mutation timing groups.",
-        "<br><strong>Timing Difference</strong> = MeanTiming(Pathway) - BackgroundTiming",
-        "<br><strong>Mut_Early:</strong> Samples where more than 50% of the 250 timing difference samplings are less than 0.",
-        "<br><strong>Mut_Late:</strong> Samples where more than 50% of the 250 timing difference samplings are greater than 0.",
-        "<br>For more details, refer to our preprint (PMID: 39868264).</p>"
+        "<p><strong>Interpretation:</strong> The Radar plot shows the statistal sigficance of the gene for the immunomodulatory effect. ",
+        "<br><strong>The overall rank score</strong> were shown for each gene by using robust rank aggregation (RRA) (PMID: 22247279). The direction of each gene was determined based on the overall ranking for positive selection or negative selection.",
+        "<br><strong>Score > 0:</strong> If the positive ranking is higher than negative ranking, then the score was set as positive. The gene is considered as the positive regulator for the immunomodulatory effect.",
+        "<br><strong>Score < 0:</strong> If the negative ranking is higher than postive ranking, then the score was set as negative. The gene is considered as the negative regulator for the immunomodulatory effect.",
+        "<br><strong>P_value:</strong> The statistal sigficance of each gene were calculated by Hommel’s method. The pos|fdr and neg|fdr were used for calculated overall p-values from multiple tests. *: P < 0.1;**: P < 0.01;***: P < 0.001"
       )
     )
   })
