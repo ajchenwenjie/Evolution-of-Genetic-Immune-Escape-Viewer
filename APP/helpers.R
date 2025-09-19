@@ -1582,7 +1582,6 @@ plot_selection_rank <- function(gstable, rank_col, score_col_index, title_text,
       segment.color = "black",
       segment.size = 0.5
     ) +
-    # 🔴 Special: add labels with box for select_gene
     geom_label_repel(
       data = df %>% filter(isSelected),
       aes(label = Gene),
