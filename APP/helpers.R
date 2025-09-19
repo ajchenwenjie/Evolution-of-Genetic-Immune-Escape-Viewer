@@ -58,6 +58,7 @@ load_data_files <- function() {
     ICB_merge = readRDS(file.path(data_path, "ICB/ICB_merge.rds")),
     ICB_surv = readRDS(file.path(data_path, "ICB/ICB_survival.rds")),
     data_crispr = data.table::fread(file.path(data_path, "CRISPR/C5BP_all.csv")),
+    data_rra = data.table::fread(file.path(data_path, "CRISPR/RRAcombined_fdr.csv")),
     MouseToHuman_gene = data.table::fread(file.path(data_path, "Refence_data/Referecen_MouseToHuman_gene.csv")),
     driver_list = fread(file.path(data_path, "Refence_data/TableS1_compendium_mutational_drivers_clean.csv"))
   )
@@ -124,6 +125,71 @@ dynamic_cohort_data <- function(cohort) {
     clinical_data = data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
     surv_data     = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv"))),
     Freq_all      = data.table::fread(file.path(cohort_path, paste0("oncoMSS_", suffix, ".csv")))
+  )
+}
+
+load_clinical_only <- function(cohort) {
+  suffix <- switch(
+    cohort,
+    "PCAWG"         = "PCAWG",
+    "TCGA-OV"       = "TCGA_OV",
+    "POG570"        = "POG570",
+    "CRC-Prognosis" = "CRC_Prognosis",
+    "TNBC"          = "TNBC",
+    "Glioma"        = "Glioma",
+    stop("Unknown cohort")
+  )
+  
+  cohort_path <- file.path(data_path, "Cohorts", suffix)
+  
+  list(
+    clinical_data = data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv")))
+  )
+}
+
+load_escape_data <- function(cohort) {
+  suffix <- switch(
+    cohort,
+    "PCAWG"         = "PCAWG",
+    "TCGA-OV"       = "TCGA_OV",
+    "POG570"        = "POG570",
+    "CRC-Prognosis" = "CRC_Prognosis",
+    "TNBC"          = "TNBC",
+    "Glioma"        = "Glioma",
+    stop("Unknown cohort")
+  )
+  
+  cohort_path <- file.path(data_path, "Cohorts", suffix)
+  
+  list(
+    diff_all = read_diff_all_fst(cohort_path, suffix),
+    clinical_data = data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
+    ciber_all = data.table::fread(file.path(cohort_path, paste0("ciber_", suffix, ".csv"))),
+    surv_data = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv"))),
+    Freq_all  = data.table::fread(file.path(cohort_path, paste0("oncoMSS_", suffix, ".csv")))
+  )
+}
+
+load_gene_explore_data <- function(cohort) {
+  suffix <- switch(
+    cohort,
+    "PCAWG"         = "PCAWG",
+    "TCGA-OV"       = "TCGA_OV",
+    "POG570"        = "POG570",
+    "CRC-Prognosis" = "CRC_Prognosis",
+    "TNBC"          = "TNBC",
+    "Glioma"        = "Glioma",
+    stop("Unknown cohort")
+  )
+  
+  cohort_path <- file.path(data_path, "Cohorts", suffix)
+  
+  list(
+    diff_allgene  = read_diff_allgene_fst(cohort_path, suffix),
+    ciber_all     = data.table::fread(file.path(cohort_path, paste0("ciber_", suffix, ".csv"))),
+    maf_data      = readRDS(file.path(cohort_path, paste0("maf_object_", suffix, ".rds"))),
+    clinical_data = data.table::fread(file.path(cohort_path, paste0("clinical_", suffix, ".csv"))),
+    surv_data     = data.table::fread(file.path(cohort_path, paste0("survival_", suffix, ".csv")))
   )
 }
 
@@ -716,7 +782,7 @@ plot_timing_summary <- function(diff_all, driver_list, clinical_data, type, cell
                    hjust = 0.5, vjust = 1, size = 8, fontface = "bold")
       }
       
-      plot_com2 <- plot_barcom + base_plot + plot_layout(widths = c(3, 4)) +
+      plot_com2 <- plot_barcom + base_plot + patchwork::plot_layout(widths = c(3, 4)) +
         plot_annotation(
           title = paste0("Timeline of ", type),
           theme = theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5))) + 
@@ -1118,11 +1184,12 @@ plot_forest_gg <- function(df, candidate_genes, min_clip = 0.1, max_clip = 10) {
     geom_vline(xintercept = 1, linetype = "dashed") +
     scale_x_log10(limits = c(min_clip, max_clip * 1.5), breaks = c(0.1, 0.5, 1, 2, 10)) +
     labs(x = "OR (95% CI)", y = NULL, title = NULL) +
-    theme_minimal(base_size = 13) +
+    theme_minimal() +
     theme(
       axis.text.y = element_text(hjust = 1, size = 10,color = "black"),
       axis.text.x = element_text(size = 12, color = "black"),
       axis.title.x = element_text(size = 12, face = "bold", color = "black"),
+      axis.line = element_line(color = "black"),
       plot.margin = margin(5, 5, 5, 5)
     )
 }
@@ -1466,4 +1533,88 @@ run_robust_logistic <- function(data) {
   })
   
   return(result)
+}
+
+
+plot_selection_rank <- function(gstable, rank_col, score_col_index, title_text,
+                                top_num = 10, color_offset = 0, select_gene = NULL) {
+  # top genes
+  top_genes <- gstable %>%
+    arrange(.data[[rank_col]]) %>%
+    dplyr::slice(1:top_num) %>%
+    pull(HumanGene)
+  
+  # add selected gene(s) to highlight list
+  highlight_genes <- unique(c(top_genes, select_gene))
+  
+  # prepare scores
+  pvec <- gstable[[score_col_index]]
+  names(pvec) <- gstable$HumanGene
+  pvec <- sort(pvec)
+  
+  df <- data.frame(Gene = names(pvec), Score = pvec) %>%
+    mutate(
+      Rank = row_number(),
+      isTarget = Gene %in% highlight_genes,
+      isSelected = Gene %in% select_gene,
+      Size = ifelse(Gene %in% highlight_genes, 3, 2),
+      NegLogScore = -log10(Score)
+    )
+  
+  # assign colors for highlight genes
+  color_map <- setNames(colors[(1:length(highlight_genes)) + color_offset],
+                        highlight_genes)
+  
+  p <- ggplot(df, aes(x = Rank, y = NegLogScore)) +
+    geom_line() +
+    geom_point(
+      data = df %>% filter(isTarget),
+      aes(color = Gene, size = Size)
+    ) +
+    scale_color_manual(values = color_map) +
+    geom_text_repel(
+      data = df %>% filter(isTarget & !isSelected),
+      aes(label = Gene),
+      size = 4,
+      max.overlaps = 20,
+      box.padding = 0.5,
+      point.padding = 0.2,
+      segment.color = "black",
+      segment.size = 0.5
+    ) +
+    # 🔴 Special: add labels with box for select_gene
+    geom_label_repel(
+      data = df %>% filter(isSelected),
+      aes(label = Gene),
+      size = 5,
+      fill = "white",       # background of the box
+      color = "black",      # text color
+      fontface = "bold",
+      box.padding = 0.6,
+      point.padding = 0.3,
+      segment.color = "red",
+      segment.size = 0.7
+    ) +
+    labs(
+      title = title_text,
+      x = "Genes",
+      y = "-log10(RRA score)"
+    ) +
+    theme_minimal() +
+    geom_hline(yintercept = 1, linetype = "dashed", color = "red", size = 0.8) +
+    scale_size_identity() +
+    theme(
+      axis.text.x = element_text(hjust = 0.5, size = 15, color = "black"),
+      axis.text.y = element_text(hjust = 1, size = 15, color = "black"),
+      axis.title.y = element_text(size = 15, color = "black"),
+      axis.title.x = element_text(size = 15, color = "black"),
+      legend.position = "none",
+      panel.grid = element_blank(),
+      panel.background = element_blank(),
+      axis.line = element_line(color = "black"),
+      axis.ticks = element_line(color = "black"),
+      plot.title = element_text(hjust = 0.5, size = 18, color = "black", face = "bold")
+    )
+  
+  return(p)
 }
