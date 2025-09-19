@@ -32,8 +32,8 @@ ui <- tagList(
                                ),
                                p(tags$b("Identifying Immunomodulatory Genes:")),
                                tags$ul(
-                                 tags$li("1. Published CRISPR screens were collected for identifying the regulators of MHC-I expression, response to CD8 T-cell-mediated killing, NK-cell-mediated killing, macrophage-mediated phagocytosis and γδ T-cell-mediated killing."),
-                                 tags$li("2. The top 100 positive/negative regulators in each study were respectively unitized for Gene Set Enrichment Analysis."),
+                                 tags$li("1. Published CRISPR screens are collected for identifying the regulators of MHC-I expression, response to CD8 T-cell-mediated killing, NK-cell-mediated killing, macrophage-mediated phagocytosis and γδ T-cell-mediated killing."),
+                                 tags$li("2. The top 100 positive/negative regulators in each study are respectively unitized for Gene Set Enrichment Analysis."),
                                  tags$li("3. Next, we selected the featured enrichments for further analysis based on the frequencies of studies reporting these enrichments."),
                                  tags$li("4. We then combined the immunomodulatory genes in each frequently enriched pathway as a gene set for that pathway. "),
                                ),
@@ -55,7 +55,7 @@ ui <- tagList(
                                  tags$li("Upload your own study for immune escape evolution.")
                                ),
                                p("Please use the tabs above to begin exploring."),
-                               p("The shiy App was developed by Shengqing Gu lab and Peter Van Loo lab."),
+                               p("The shiy App is developed by Shengqing Gu lab and Peter Van Loo lab."),
                                p(
                                  "For more details, refer to our BioRxiv preprint: https://www.biorxiv.org/content/10.1101/2025.01.17.632799v1",
                                  tags$a(href = "https://github.com/ajchenwenjie/", 
@@ -1451,7 +1451,7 @@ server <- function(input, output, session) {
     HTML(
       paste0(
         "<p><strong>Interpretation:</strong> The Dot plot shows overall ranking of the regulators acorss CRIPSR screen. Top 10 regulators and genes of interst are shown with labels.",
-        "<br> The pos|rank or neg|rank were obtained from each studies and combined by using robust rank aggregation (RRA). (PMID: 22247279)"
+        "<br> The pos|rank or neg|rank are obtained from each studies and combined by using robust rank aggregation (RRA). (PMID: 22247279)"
       )
     )
   })
@@ -1550,9 +1550,9 @@ server <- function(input, output, session) {
         "<br><strong>Timing Difference:</strong> = MeanTiming(Pathway) - BackgroundTiming",
         "<br><strong>Mut_Early:</strong> Samples where more than 50% of the 250 timing difference samplings are less than 0.",
         "<br><strong>Mut_Late:</strong> Samples where more than 50% of the 250 timing difference samplings are greater than 0.",
-        "<br>Differences between groups were assessed using the Wilcoxon test.",
-        "<br>The composition of immune cell infiltration were calculated by CIBERSORT Absolute mode. (PMID: 29344893)",
-        "<br>Specifically in PCAWG cohort, only PCAWG-TCGA samples with available RNA-seq data were included.</p>"
+        "<br>Differences between groups are assessed using the Wilcoxon test.",
+        "<br>The composition of immune cell infiltration are calculated by CIBERSORT Absolute mode. (PMID: 29344893)",
+        "<br>Specifically in PCAWG cohort, only PCAWG-TCGA samples with available RNA-seq data are included.</p>"
       )
     )
   })
@@ -1562,10 +1562,10 @@ server <- function(input, output, session) {
     HTML(
       paste0(
         "<p><strong>Interpretation:</strong> The Radar plot shows the statistal sigficance of the gene for the immunomodulatory effect. ",
-        "<br><strong>The overall rank score</strong> were shown for each gene by using robust rank aggregation (RRA) (PMID: 22247279). The direction of each gene was determined based on the overall ranking for positive selection or negative selection.",
-        "<br><strong>Score > 0:</strong> If the positive ranking is higher than negative ranking, then the score was set as positive. The gene is considered as the positive regulator for the immunomodulatory effect.",
-        "<br><strong>Score < 0:</strong> If the negative ranking is higher than postive ranking, then the score was set as negative. The gene is considered as the negative regulator for the immunomodulatory effect.",
-        "<br><strong>P_value:</strong> The statistal sigficance of each gene were calculated by Hommel’s method. The pos|fdr and neg|fdr were used for calculated overall p-values from multiple tests. *: P < 0.1;**: P < 0.01;***: P < 0.001"
+        "<br><strong>The overall rank score</strong> is shown for each gene by using robust rank aggregation (RRA) (PMID: 22247279). The direction of each gene is determined based on the overall ranking for positive selection or negative selection.",
+        "<br><strong>Score > 0:</strong> If the positive ranking is higher than negative ranking, then the score is set as positive. The gene is considered as the positive regulator for the immunomodulatory effect.",
+        "<br><strong>Score < 0:</strong> If the negative ranking is higher than postive ranking, then the score is set as negative. The gene is considered as the negative regulator for the immunomodulatory effect.",
+        "<br><strong>P_value:</strong> The statistal sigficance of each gene is calculated by Hommel’s method. The pos|fdr and neg|fdr are used for calculating overall p-values from multiple tests. * : P < 0.1; ** : P < 0.01; *** : P < 0.001."
       )
     )
   })
