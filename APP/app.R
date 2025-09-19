@@ -55,6 +55,7 @@ ui <- tagList(
                                  tags$li("Upload your own study for immune escape evolution.")
                                ),
                                p("Please use the tabs above to begin exploring."),
+                               p("The shiy App was developed by Shengqing Gu lab and Peter Van Loo lab."),
                                p(
                                  "For more details, refer to our BioRxiv preprint: https://www.biorxiv.org/content/10.1101/2025.01.17.632799v1",
                                  tags$a(href = "https://github.com/ajchenwenjie/", 
@@ -65,48 +66,97 @@ ui <- tagList(
                       )
              ),
              tabPanel("Immunomodulatory Pathways",
-                      sidebarLayout(
-                        sidebarPanel(
-                          width = 2,
-                          # Hidden selectInput - controlled by image gallery
-                          div(style = "display: none;",
-                              selectInput("cell_type",
-                                          "Immunity Scenarios", 
-                                          choices = names(cell_type_files),
-                                          selected = "MHC-I Regulators")),
-                          selectInput("immuno_regulators",
-                                      "Select Regulator Type", 
-                                      choices = c("Positive" = "pos", "Negative" = "neg"),
-                                      selected = "pos"),
-                      numericInput("immuno_n", "Number of Top Pathways", value = 10, min = 5, max = 50)),
-                      mainPanel(
-                          width = 8,
-                          uiOutput("cell_type_gallery"),
-                          tags$hr(),
-                          uiOutput("immuno_pathway_plot_ui"),
-                          br(),
-                          uiOutput("pathway_interpretation"))),
+                      tabsetPanel(
+                        # Tab 1: RRA Analysis
+                        tabPanel("Overall Ranking",
+                                 sidebarLayout(
+                                   sidebarPanel(
+                                     width = 2,
+                                     # Hidden selectInput - controlled by image gallery
+                                     div(style = "display: none;",
+                                         selectInput("cell_type_rra",
+                                                     "Immunity Scenarios", 
+                                                     choices = names(cell_type_files),
+                                                     selected = "MHC-I Regulators")),
+                                     selectInput("immuno_regulators",
+                                                 "Select Regulator Type", 
+                                                 choices = c("Positive" = "pos", "Negative" = "neg"),
+                                                 selected = "pos"),
+                                     tagList(
+                                       textAreaInput("geneList", "Enter Gene Symbols (comma or newline separated)", ""),
+                                       actionButton("submit_genes", "Submit Genes")
+                                     ),
+                                   ),
+                                   mainPanel(
+                                     width = 9,
+                                     uiOutput("cell_type_gallery_rra"),
+                                     tags$hr(),
+                                     div(
+                                       style = "display: flex; justify-content: center; align-items: center; width: 100%;",
+                                       withSpinner(plotOutput("immuno_rra_plot", height = "450px", width = "450px"))
+                                     ),
+                                     br(),
+                                     uiOutput("rra_interpretation")
+                                   )
+                                 )
+                        ),
+                        
+                        # Tab 2: Frequent Pathways
+                        tabPanel("Frequent Pathways",
+                                 sidebarLayout(
+                                   sidebarPanel(
+                                     width = 2,
+                                     # Hidden selectInput - controlled by image gallery
+                                     div(style = "display: none;",
+                                         selectInput("cell_type_pathway",
+                                                     "Immunity Scenarios", 
+                                                     choices = names(cell_type_files),
+                                                     selected = "MHC-I Regulators")),
+                                     selectInput("pathway_regulators",
+                                                 "Select Regulator Type", 
+                                                 choices = c("Positive" = "pos", "Negative" = "neg"),
+                                                 selected = "pos"),
+                                     numericInput("immuno_n", "Number of Top Pathways", value = 10, min = 5, max = 50),
+                                   ),
+                                   mainPanel(
+                                     width = 9,
+                                     uiOutput("cell_type_gallery_pathway"),
+                                     tags$hr(),
+                                     div(
+                                       style = "text-align: center;",
+                                       uiOutput("immuno_pathway_plot_ui")
+                                     ),
+                                     br(),
+                                     uiOutput("pathway_interpretation")
+                                   )
+                                 )
+                        )
+                      ),
+                      
+                      # CSS styling
                       tags$head(
-                      tags$style(HTML(".gallery-grid { 
-                      display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;}
-                      .gallery-card {
-                      border: 2px solid #ddd; border-radius: 10px; padding: 15px; text-align: center;
-                      background: #f9f9f9; cursor: pointer; transition: all 0.2s;
-                      }
-                      .gallery-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-                      .gallery-card.selected { border-color: #007bff; background: #e7f3ff; }
-                      .gallery-card img { width: 160px; height: 100px; object-fit: contain; }
-                      .gallery-title { margin-top: 10px; font-weight: bold; }
-                                      "))
+                        tags$style(HTML("
+     .gallery-grid {
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px;
+      }
+     .gallery-card {
+        border: 2px solid #ddd; border-radius: 10px; padding: 15px; text-align: center;
+        background: #f9f9f9; cursor: pointer; transition: all 0.2s;
+      }
+     .gallery-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+     .gallery-card.selected { border-color: #007bff; background: #e7f3ff; }
+     .gallery-card img { width: 160px; height: 100px; object-fit: contain; }
+     .gallery-title { margin-top: 10px; font-weight: bold; }
+     "))
                       )
-          ),
+             ),
           tabPanel(
-               "Select the WGS Datasetss",
+               "Select the WGS Datasets",
                sidebarLayout(
                  sidebarPanel(
                    width = 2,
                    selectInput("cohort_select", "Select Cohort", choices = c("PCAWG", "POG570")),
-                   actionButton("submit_btn", "Submit")
+                   actionButton("submit_btn", "Select")
                  ),
                  mainPanel(
                    conditionalPanel(
@@ -130,37 +180,45 @@ ui <- tagList(
                sidebarLayout(
                  sidebarPanel(
                    width = 2,
-                   # Cell type selector for specific tabs only
+                   
+                   # Cohort selector for this tab
+                   selectInput("escape_cohort_select", "Select Cohort",
+                               choices = c("PCAWG", "TCGA-OV", "POG570", "CRC-Prognosis", "TNBC", "Glioma")),
+                   actionButton("escape_submit_btn", "Select"),
+                   
+                   tags$hr(),
+                   
+                   # Cell type selector for specific tabs
                    conditionalPanel(
-                     condition = "input.crispr_tab_selected == 'Single Pathway' || input.crispr_tab_selected == 'Multi Pathways' || input.crispr_tab_selected == 'Survival' || input.crispr_tab_selected =='Immune Cell Infiltration'", 
+                     condition = "input.crispr_tab_selected == 'Single Pathway' || input.crispr_tab_selected == 'Multi Pathways' || input.crispr_tab_selected == 'Survival' || input.crispr_tab_selected =='Immune Cell Infiltration'",
                      uiOutput("cell_type_ui")
                    ),
                    
                    # Timeline specific controls
                    conditionalPanel(
-                     condition = "input.crispr_tab_selected == 'Timeline'", 
-                     uiOutput("timing_type_ui"), 
+                     condition = "input.crispr_tab_selected == 'Timeline'",
+                     uiOutput("timing_type_ui"),
                      uiOutput("cell_type_timeline_ui")
                    ),
                    
                    # Single Pathway specific controls
                    conditionalPanel(
-                     condition = "input.crispr_tab_selected == 'Single Pathway'", 
-                     uiOutput("regulator_selector"), 
+                     condition = "input.crispr_tab_selected == 'Single Pathway'",
+                     uiOutput("regulator_selector"),
                      uiOutput("pathway_selector")
                    ),
                    
-                   # Survival specific controls (no cell_type_ui here)
+                   # Survival specific controls
                    conditionalPanel(
-                     condition = "input.crispr_tab_selected == 'Survival'", 
-                     uiOutput("pathway_selector_surv"), 
+                     condition = "input.crispr_tab_selected == 'Survival'",
+                     uiOutput("pathway_selector_surv"),
                      uiOutput("select_histology_ui")
                    ),
                    
-                   # Immune Cell Infiltration specific controls (no cell_type_ui here)
+                   # Immune Cell Infiltration specific controls
                    conditionalPanel(
-                     condition = "input.crispr_tab_selected == 'Immune Cell Infiltration'", 
-                     uiOutput("pathway_selector_ciber"), 
+                     condition = "input.crispr_tab_selected == 'Immune Cell Infiltration'",
+                     uiOutput("pathway_selector_ciber"),
                      uiOutput("select_histology_ciber")
                    )
                  ),
@@ -168,10 +226,7 @@ ui <- tagList(
                    tabsetPanel(
                      id = "crispr_tab_selected",
                      tabPanel("Single Pathway",
-                              h4("Top 10 Cancer Types by Mutation Frequency"),
-                              withSpinner(plotOutput("top_cancer_plot", width = "400px", height = "400px")),
-                              br(),
-                              uiOutput("singlepathway_interpretation")
+                              uiOutput("singlepathway_panel")
                      ),
                      tabPanel("Multi Pathways",
                               fluidPage(
@@ -206,21 +261,46 @@ ui <- tagList(
                sidebarLayout(
                  sidebarPanel(
                    width = 2,
+                   
+                   selectInput("gene_cohort_select", "Select Cohort",
+                               choices = c("PCAWG", "TCGA-OV", "POG570", "CRC-Prognosis", "TNBC", "Glioma")),
+                   actionButton("gene_submit_btn", "Select"),
+                   
+                   tags$hr(),
+
                    checkboxInput("useGeneList", "Use Custom Gene List", value = FALSE),
-                   conditionalPanel(condition = "input.useGeneList == true", textAreaInput("geneList", "Enter Gene Symbols (comma or newline separated)", "")),
-                   conditionalPanel(condition = "input.gene_tab_selected == 'Survival'", uiOutput("select_histology_list")),
-                   conditionalPanel(condition = "input.gene_tab_selected == 'ICB Response'", selectInput("therapy_select_genes", "Select Therapy:", choices = NULL)),
-                   conditionalPanel(condition = "input.gene_tab_selected == 'ICB Survival'", tagList(selectInput("therapy_surv_genes", "Select Therapy:", choices = NULL)))
+                   conditionalPanel(
+                     condition = "input.useGeneList == true",
+                     tagList(
+                       textAreaInput("geneList", "Enter Gene Symbols (comma or newline separated)", ""),
+                       actionButton("submit_genes", "Submit Genes")
+                     )
+                   ),
+                   tags$hr(),
+                   conditionalPanel(
+                     condition = "input.gene_tab_selected == 'Survival'",
+                     uiOutput("select_histology_list")
+                   ),
+                   conditionalPanel(
+                     condition = "input.gene_tab_selected == 'ICB Response'",
+                     selectInput("therapy_select_genes", "Select Therapy:", choices = NULL)
+                   ),
+                   conditionalPanel(
+                     condition = "input.gene_tab_selected == 'ICB Survival'",
+                     tagList(selectInput("therapy_surv_genes", "Select Therapy:", choices = NULL))
+                   )
                  ),
                  mainPanel(
                    tabsetPanel(
                      id = "gene_tab_selected",
+                     tabPanel("Immunomodulatory Effect",
+                              div(class = "hcenter", withSpinner(uiOutput("radar_plot_ui"))),
+                              br(),
+                              uiOutput("radar_interpretation")
+                     ),
                      tabPanel("Mutation Frequency", 
                               div(class = "hcenter", withSpinner(uiOutput("oncoplot_ui"))), 
                               br(),
-                              div(style = "text-align: center;",
-                                  downloadButton("download_oncoplot", "Download Plot", class = "btn-sm btn-outline-primary")),
-                              br(), 
                               uiOutput("mutation_freq_interpretation")),
                      tabPanel("Gene Timing", withSpinner(uiOutput("timing_plot_singlegene_ui")), br(), uiOutput("gene_timing_interpretation")),
                      tabPanel("Pathway Timing", withSpinner(plotOutput("timing_plot_gene", width = "500px", height = "500px")), br(), uiOutput("pathway_timing_gene_interpretation")),
@@ -247,7 +327,6 @@ ui <- tagList(
              tabPanel("Help",
                       fluidPage(
                         h2("User Guide"),
-                        
                         h4("Overview"),
                         p("The Evolution of Genetic Immune Escape Viewer is an interactive Shiny web application designed to explore the landscape of the evolution of genetic immune escape mechanisms across cancer types."),
                         p("It integrates CRISPR screens, mutation frequency, timing information, and immune therapy response from multiple cohorts such as PCAWG, TCGA, and ICB studies."),
@@ -373,8 +452,10 @@ server <- function(input, output, session) {
   ## Page 2
   ###################################################
   ## Page2 -- Pathway Summary
-  output$cell_type_gallery <- renderUI({
-    current_selection <- input$cell_type
+  # RRA Tab Gallery
+  # RRA Tab Gallery
+  output$cell_type_gallery_rra <- renderUI({
+    current_selection <- input$cell_type_rra
     
     cards <- lapply(names(cell_type_files), function(label) {
       cell_code <- cell_type_files[[label]]
@@ -382,7 +463,7 @@ server <- function(input, output, session) {
       
       div(
         class = paste("gallery-card", if(is_selected) "selected"),
-        onclick = sprintf("Shiny.setInputValue('gallery_click', '%s')", label),
+        onclick = sprintf("Shiny.setInputValue('gallery_click_rra', '%s')", label),
         img(src = paste0(cell_code, ".png"), alt = label),
         div(class = "gallery-title", label)
       )
@@ -391,15 +472,48 @@ server <- function(input, output, session) {
     div(class = "gallery-grid", cards)
   })
   
-  # Simple click handler
-  observeEvent(input$gallery_click, {
-    updateSelectInput(session, "cell_type", selected = input$gallery_click)
+  # Pathway Tab Gallery
+  output$cell_type_gallery_pathway <- renderUI({
+    current_selection <- input$cell_type_pathway
+    
+    cards <- lapply(names(cell_type_files), function(label) {
+      cell_code <- cell_type_files[[label]]
+      is_selected <- identical(current_selection, label)
+      
+      div(
+        class = paste("gallery-card", if(is_selected) "selected"),
+        onclick = sprintf("Shiny.setInputValue('gallery_click_pathway', '%s')", label),
+        img(src = paste0(cell_code, ".png"), alt = label),
+        div(class = "gallery-title", label)
+      )
+    })
+    
+    div(class = "gallery-grid", cards)
   })
   
-  # Rest of your existing reactive functions (unchanged)
-  study_count <- reactive({
-    req(input$cell_type, input$immuno_regulators)
-    cell_type_code <- cell_type_files[[input$cell_type]]
+  # RRA Tab click handler
+  observeEvent(input$gallery_click_rra, {
+    updateSelectInput(session, "cell_type_rra", selected = input$gallery_click_rra)
+  })
+  
+  # Pathway Tab click handler
+  observeEvent(input$gallery_click_pathway, {
+    updateSelectInput(session, "cell_type_pathway", selected = input$gallery_click_pathway)
+  })
+  
+  # Keep galleries synchronized (optional)
+  observeEvent(input$cell_type_rra, {
+    updateSelectInput(session, "cell_type_pathway", selected = input$cell_type_rra)
+  })
+  
+  observeEvent(input$cell_type_pathway, {
+    updateSelectInput(session, "cell_type_rra", selected = input$cell_type_pathway)
+  })
+  
+  # Study count for RRA tab
+  study_count_rra <- reactive({
+    req(input$cell_type_rra, input$immuno_regulators)
+    cell_type_code <- cell_type_files[[input$cell_type_rra]]
     reg <- input$immuno_regulators
     
     df <- data_crispr %>%
@@ -408,25 +522,42 @@ server <- function(input, output, session) {
     length(unique(df$Study))
   })
   
-  output$immuno_pathway_plot_ui <- renderUI({
-    req(input$immuno_n, input$cell_type)
+  # Study count for pathway tab
+  study_count_pathway <- reactive({
+    req(input$cell_type_pathway, input$pathway_regulators)
+    cell_type_code <- cell_type_files[[input$cell_type_pathway]]
+    reg <- input$pathway_regulators
     
-    study_n <- study_count()
-    if (study_n == 0) {
-      return(h4("No data available for this selection", style = "text-align: center; color: #666; margin-top: 50px;"))
-    }
+    df <- data_crispr %>%
+      dplyr::filter(celltype == cell_type_code, regulators == reg)
     
-    total_width <- min(600 + 30  * study_n, 2000)
-    total_height <- min(600 + 20 * input$immuno_n, 1200)
-    
-    plotlyOutput("immuno_pathway_plot", height = paste0(total_height, "px"), width = paste0(total_width, "px"))
+    length(unique(df$Study))
   })
   
-  output$immuno_pathway_plot <- renderPlotly({
-    req(input$cell_type, input$immuno_regulators, input$immuno_n)
+  # Pathway plot UI
+  output$immuno_pathway_plot_ui <- renderUI({
+    req(input$immuno_n, input$cell_type_pathway)
     
-    cell_type_code <- cell_type_files[[input$cell_type]]
-    reg <- input$immuno_regulators
+    study_n <- study_count_pathway()
+    if (study_n == 0) {
+      return(h4("No data available for this selection",
+                style = "text-align: center; color: #666; margin-top: 50px;"))
+    }
+    
+    total_width <- min(600 + 30 * study_n, 2000)
+    total_height <- min(600 + 20 * input$immuno_n, 1200)
+    
+    plotlyOutput("immuno_pathway_plot",
+                 height = paste0(total_height, "px"),
+                 width = paste0(total_width, "px"))
+  })
+  
+  # Pathway plot
+  output$immuno_pathway_plot <- renderPlotly({
+    req(input$cell_type_pathway, input$pathway_regulators, input$immuno_n)
+    
+    cell_type_code <- cell_type_files[[input$cell_type_pathway]]
+    reg <- input$pathway_regulators
     num <- input$immuno_n
     
     # Filter data
@@ -453,7 +584,7 @@ server <- function(input, output, session) {
         Description = factor(Description, levels = plot_order)
       )
     
-    p <- ggplot(plot_data, aes(x = Description, y =  Study_2, size = `-log10(Padj)`, text = tooltip_text)) +
+    p <- ggplot(plot_data, aes(x = Description, y = Study_2, size = `-log10(Padj)`, text = tooltip_text)) +
       geom_point(
         aes(fill = Cell_line),
         shape = 21,
@@ -465,17 +596,89 @@ server <- function(input, output, session) {
       theme_minimal() +
       scale_fill_manual(values = cellline_colors) +
       theme(
-        axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5, size = 10, color = "black"),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 10, color = "black"),
         axis.text.y = element_text(size = 10, color = "black"),
         axis.line = element_line(color = "black", size = 0.05),
         axis.ticks = element_line(color = "black"),
         plot.margin = margin(0.7, 0.4, 0.1, 0.2, "cm"),
         panel.border = element_rect(color = "black", fill = NA, size = 0.5),
         legend.title = element_text(size = 10),
-        legend.text  = element_text(size = 8)
+        legend.text = element_text(size = 8)
       )
     
     ggplotly(p, tooltip = "text")
+  })
+  
+  # Create reactive for processed gene list
+  processed_genes <- reactive({
+    input$submit_genes  # Take dependency on button
+    
+    isolate({
+      # Check if geneList input exists and is character
+      if(is.null(input$geneList) || !is.character(input$geneList) || input$geneList == "") {
+        return(character(0))
+      }
+      
+      # Split by comma, newline, or semicolon and clean up
+      genes <- strsplit(as.character(input$geneList), "[,;\n\r]+")[[1]] %>%
+        trimws() %>%
+        unique() %>%
+        .[. != ""]  # Remove empty strings
+      
+      return(genes)
+    })
+  })
+  
+  # RRA plot
+  output$immuno_rra_plot <- renderPlot({
+    req(input$cell_type_rra, input$immuno_regulators)
+    
+    # Use the processed gene list
+    select_gene <- processed_genes()
+    
+    cell_type_code <- cell_type_files[[input$cell_type_rra]]
+    
+    df_sub <- data_rra %>%
+      filter(cell_type == cell_type_code)
+    
+    validate(need(nrow(df_sub) > 0, "No data available for this selection"))
+    
+    # Create title mapping
+    title_mapping <- c(
+      "MHCregulators" = "MHC-I Regulators",
+      "Tcells" = "T-cell Killing",
+      "NKcells" = "NK-cell Killing",
+      "Macrophages" = "Macrophage Killing",
+      "GammadeltaTcells" = "GDT-cell Killing"
+    )
+    
+    # Create regulation type mapping
+    regulation_mapping <- c(
+      "pos" = "Positive Regulation",
+      "neg" = "Negative Regulation"
+    )
+    
+    # Get the mapped title or use the original if not found
+    mapped_title <- title_mapping[input$cell_type_rra]
+    if(is.na(mapped_title)) {
+      mapped_title <- input$cell_type_rra
+    }
+    
+    # Get the mapped regulation type
+    mapped_regulation <- regulation_mapping[input$immuno_regulators]
+    if(is.na(mapped_regulation)) {
+      mapped_regulation <- input$immuno_regulators
+    }
+    
+    plot_selection_rank(
+      gstable = df_sub,
+      rank_col = ifelse(input$immuno_regulators == "pos", "Rank_pos", "Rank_neg"),
+      score_col_index = ifelse(input$immuno_regulators == "pos", "Score_pos", "Score_neg"),
+      title_text = paste(mapped_title, "-", mapped_regulation),
+      top_num = 10,
+      color_offset = 0,
+      select_gene = select_gene
+    )
   })
   
   ###################################################
@@ -486,16 +689,21 @@ server <- function(input, output, session) {
     loading_flag(TRUE)
     
     withProgress(message = "Loading data...", value = 0.1, {
-      data <- dynamic_cohort_data(input$cohort_select)
-      incProgress(0.4, detail = "Processing data...")
+      data <- load_clinical_only(input$cohort_select)   # ⬅️ only clinical_data
+      incProgress(0.6, detail = "Processing clinical data...")
       
       cohort_data(data)
       
-      type_list <- data$clinical_data %>% distinct(aliquot_id, histology_abbreviation)
-      updateSelectInput(session, "cancer_select", choices = c("All", base::unique(type_list$histology_abbreviation)))
-      updateSelectInput(session, "timing_type", choices = base::unique(data$diff_all$histology_abbreviation))
+      # update cancer type selector using clinical_data only
+      type_list <- data$clinical_data %>%
+        distinct(aliquot_id, histology_abbreviation)
       
-      incProgress(0.5, detail = "Finalizing...")
+      updateSelectInput(
+        session, "cancer_select",
+        choices = c("All", base::unique(type_list$histology_abbreviation))
+      )
+      
+      incProgress(0.3, detail = "Finalizing...")
       Sys.sleep(0.5)
     })
     
@@ -558,7 +766,7 @@ server <- function(input, output, session) {
       theme_minimal(base_size = 14) +
       scale_y_continuous(breaks = log10(c(0.1, 1, 10, 100, 1000, 10000)), 
                          labels = c(0.1, 1, 10, 100, 1000, 10000)) +
-      labs(title = "TMB", x = "", y = "TMB") +
+      labs(title = "Tumor Mutation Burden", x = "", y = "TMB") +
       theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "none")
   })
   
@@ -578,8 +786,9 @@ server <- function(input, output, session) {
     ggplot(data, aes(x = "", y = n, fill = Sample_Type)) +
       geom_col() +
       coord_polar("y") +
-      theme_void(base_size = 14) +
-      labs(title = "Sample Type") + scale_fill_npg()
+      theme_void(base_size = 10) +
+      labs(title = "Sample Type", fill = NULL) +
+      scale_fill_npg() 
   })
   
   output$gender_pie <- renderPlot({
@@ -591,14 +800,30 @@ server <- function(input, output, session) {
       geom_col() +
       scale_fill_manual(values = Gender_colors) +
       coord_polar("y") +
-      theme_void(base_size = 14) +
-      labs(title = "Gender")
+      theme_void(base_size = 10) +
+      labs(title = "Gender", fill = NULL) 
   })
   
   ###################################################
   ## Page 4 Immune Escape Evolution
   ###################################################
   # Single Pathway -- make bar plot for top 10 cancer types by Freq_mut for selected pathways
+  observeEvent(input$escape_submit_btn, {
+    loading_flag(TRUE)
+    
+    withProgress(message = "Loading Immune Escape data...", value = 0.1, {
+      data <- load_escape_data(input$escape_cohort_select)
+      incProgress(0.6, detail = "Processing Immune Escape data...")
+      
+      cohort_data(data)   # replace reactiveVal with only heavy datasets
+      
+      incProgress(0.3, detail = "Finalizing...")
+      Sys.sleep(0.5)
+    })
+    
+    loading_flag(FALSE)
+  })
+  
   output$cell_type_ui <- renderUI({
     selectInput("cell_type", "Immunity Scenarios", choices = names(cell_type_files))
   })
@@ -843,22 +1068,123 @@ server <- function(input, output, session) {
   ###################################################
   ## Page 5
   ###################################################
+  observeEvent(input$gene_submit_btn, {
+    loading_flag(TRUE)
+    
+    withProgress(message = "Loading gene exploration data...", value = 0.1, {
+      data <- load_gene_explore_data(input$gene_cohort_select)
+      incProgress(0.7, detail = "Processing gene exploration data...")
+      
+      cohort_data(data)   # now contains diff_allgene, ciber_all, maf_data, clinical_data, surv_data
+      
+      incProgress(0.2, detail = "Finalizing...")
+      Sys.sleep(0.5)
+    })
+    
+    loading_flag(FALSE)
+  })
+  
   # Mutation Frequency -- make the onocoplot for the selected gene list
   maf_obj <- reactive({
     req(cohort_data())
     cohort_data()$maf_data
   })
   
-  get_selected_genes <- reactive({
+  get_selected_genes <- eventReactive(input$submit_genes, {
     if (input$useGeneList && nzchar(input$geneList)) {
-      unlist(strsplit(input$geneList, "[,\n]")) %>% trimws() %>% base::unique()
+      unlist(strsplit(input$geneList, "[,\n]")) %>% 
+        trimws() %>% 
+        base::unique()
     } else {
       c(
         "ACHE", "AMOT", "CDK5R1", "CDK6", "CELSR1", "CNTFR", "CRMP1", "DPYSL2",
         "ETS2", "GLI1", "ADGRG1", "HEY1", "HEY2", "L1CAM", "LDB1", "MYH9", "NF1",
-        "NKX6-1", "NRCAM", "NRP1", "TP53")
+        "NKX6-1", "NRCAM", "NRP1", "TP53"
+      )
     }
+  }, ignoreNULL = FALSE)
+  
+  output$radar_plot_ui <- renderUI({
+    req(cohort_data()$maf_data) 
+    
+    gene_n <- length(get_selected_genes())
+    base_height <- 300
+    extra_height <- 250
+    height_cap <- 2000
+    
+    ncol <- 3
+    n_rows <- ceiling(gene_n / ncol)
+    total_height <- min(base_height + extra_height * (n_rows - 1), height_cap)
+    
+    plotOutput("radar_plot", height = paste0(total_height, "px"), width = "1000px")
   })
+  
+  output$radar_plot <- renderPlot({
+    selected_genes <- get_selected_genes()
+    req(length(selected_genes) > 0)
+    
+    RRA_all <- data_rra
+    
+    radar_list <- lapply(selected_genes, function(gene) {
+      df_wide <- RRA_all %>%
+        dplyr::filter(HumanGene == gene) %>%
+        mutate(cell_type = factor(cell_type, levels = c("MHCregulators", "Tcells", "NKcells", "Macrophages", "GammadeltaTcells"))) %>%
+        arrange(cell_type) %>% 
+        dplyr::select(HumanGene, Regulation, Score) %>%
+        tidyr::pivot_wider(names_from = Regulation, values_from = Score)
+      
+      if (nrow(df_wide) == 0) {
+        return(ggplot() + theme_void() +
+                 annotate("text", x = 0.5, y = 0.5,
+                          label = paste("No data for", gene),
+                          size = 5, hjust = 0.5))
+      }
+      
+      axis_labels_left <- paste0(colnames(df_wide)[-1], "   ")  # Add spaces for left alignment
+      
+      ggradar(
+        df_wide,
+        values.radar = c("-1", "0", "1"),
+        grid.min = -1,
+        grid.mid = 0,
+        grid.max = 1,
+        group.colours = "blue",
+        fill = TRUE,
+        fill.alpha = 0.3,
+        base.size = 10,
+        grid.line.width = 0.8,
+        grid.label.size = 8,
+        group.line.width = 1,
+        gridline.label.offset = -0.15,
+        group.point.size = 1.5,
+        axis.label.size = 6,
+        axis.label.offset = 1.2,
+        axis.labels = axis_labels_left,  # Use custom labels
+        legend.position = "bottom",
+        background.circle.colour = "white",
+        gridline.min.colour = "black",
+        gridline.mid.colour = "red",
+        gridline.max.colour = "black",
+        plot.extent.x.sf = 1.25,
+        plot.extent.y.sf = 1.2
+      ) +
+        ggtitle(gene) +
+        theme(
+          plot.title = element_text(size = 20, face = "bold", hjust = 0.5, margin = margin(b = 10, t = 10)),
+          legend.text = element_text(size = 4),
+          legend.title = element_text(size = 7),
+          legend.key.size = unit(0.2, "cm"),
+          legend.key.height = unit(0.15, "cm"),
+          legend.spacing.x = unit(0.5, "cm"),
+          legend.spacing.y = unit(0.1, "cm"),
+          legend.margin = margin(t = 1, b = 1),
+          legend.box.spacing = unit(0.1, "cm"),
+          plot.margin = margin(t = 20, r = 15, b = 10, l = 15)
+        )
+    })
+    
+    cowplot::plot_grid(plotlist = radar_list, ncol = 3)
+  }, res = 60)
   
   output$oncoplot_ui <- renderUI({
     req(get_selected_genes())
@@ -1149,6 +1475,19 @@ server <- function(input, output, session) {
     )
   })
   
+  output$cohortsummary_interpretation <- renderUI({
+    req(cohort_data())
+    HTML(
+      paste0(
+        "<br><strong>PCAWG:</strong> 2658 cancers from Pan-cancer analysis of whole genomes. (PMID: 32025007)",
+        "<br><strong>POG570:</strong> 570 advanced and metastatic cancers from patients from the Personalized OncoGenomics (POG) Program. (PMID: 35121966)",
+        "<br><strong>CRC_Prognosis:</strong> 1063 colorectal cancers from the Swedish population-based cohort. (PMID: 39112715) Coming Soon...",
+        "<br><strong>TCGA-OV:</strong> 314 ovarian cancers from latest TCGC-OV WGS cohort. (PMID: 21720365) Coming Soon...",
+        "<br><strong>TNBC:</strong> 254 tripple-negative breast cancers from TNBC WGS cohort. (PMID: 31570822) Coming Soon...</p>"
+      )
+    )
+  })
+  
   ## Page 4
   output$singlepathway_interpretation <- renderUI({
     HTML(
@@ -1156,6 +1495,15 @@ server <- function(input, output, session) {
         "<p><strong>Interpretation:</strong> The barplot shows the top cancer types with the most frequent mutations in the selected pathway.",
         "<br>The number on the right of each bar represents the number of samples with mutations in that pathway.</p>"
       )
+    )
+  })
+  
+  output$singlepathway_panel <- renderUI({
+    tagList(
+      h4("Top 10 Cancer Types by Mutation Frequency"),
+      withSpinner(plotOutput("top_cancer_plot", width = "400px", height = "400px")),
+      br(),
+      uiOutput("singlepathway_interpretation")   # will only render after plot exists
     )
   })
   
@@ -1197,6 +1545,19 @@ server <- function(input, output, session) {
         "<br>Differences between groups were assessed using the Wilcoxon test.",
         "<br>The composition of immune cell infiltration were calculated by CIBERSORT Absolute mode. (PMID: 29344893)",
         "<br>Specifically in PCAWG cohort, only PCAWG-TCGA samples with available RNA-seq data were included.</p>"
+      )
+    )
+  })
+  
+  output$radar_interpretation <- renderUI({
+    req(cohort_data()$maf_data)
+    HTML(
+      paste0(
+        "<p><strong>Interpretation:</strong> The Kaplan-Meier (KM) plot shows survival outcomes stratified by mutation timing groups.",
+        "<br><strong>Timing Difference</strong> = MeanTiming(Pathway) - BackgroundTiming",
+        "<br><strong>Mut_Early:</strong> Samples where more than 50% of the 250 timing difference samplings are less than 0.",
+        "<br><strong>Mut_Late:</strong> Samples where more than 50% of the 250 timing difference samplings are greater than 0.",
+        "<br>For more details, refer to our preprint (PMID: 39868264).</p>"
       )
     )
   })
