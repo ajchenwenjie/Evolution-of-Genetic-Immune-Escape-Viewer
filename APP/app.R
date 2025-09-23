@@ -24,20 +24,6 @@ ui <- tagList(
              tabPanel("Introduction",
                       fluidRow(
                           column(10, offset = 1,
-                                fluidRow(
-                                  column(
-                                  12,
-                                  tags$div(
-                                  style = "text-align:center; margin-top:15px; margin-bottom:30px;",
-                                  tags$blockquote(
-                                  style = "font-size:25px; font-style:italic; color:#2c3e50;",
-                                  "“Nothing in biology makes sense except in the light of evolution” ",
-                                  tags$br(),
-                                  tags$span(style = "font-weight:bold;", "- Theodosius Dobzhansky")
-                                  )
-                                 )
-                                )
-                               ),
                                h2("Welcome to the Evolution of Genetic Immune Escape Viewer"),
                                p("This Shiny application explores the landscape of immune escape evolution in cancer by integrating data from CRISPR screens, mutation frequencies, and mutation timing across multiple cancer types from the WGS projects."),
                                h3("Key Feature: Inferring Mutation Timing"),
