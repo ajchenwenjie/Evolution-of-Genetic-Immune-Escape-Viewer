@@ -772,7 +772,7 @@ plot_timing_summary <- function(diff_all, driver_list, clinical_data, type, cell
       for (i in 1:nrow(text_data)) {
         base_plot <- base_plot +
           annotate("text", x = text_data$x[i], y = text_data$y[i], label = text_data$text[i],
-                   hjust = text_data$hjust[i], vjust = text_data$vjust[i], size = 6)
+                   hjust = text_data$hjust[i], vjust = text_data$vjust[i], size = 5)
         
       }
       
@@ -782,7 +782,7 @@ plot_timing_summary <- function(diff_all, driver_list, clinical_data, type, cell
                    hjust = 0.5, vjust = 1, size = 8, fontface = "bold")
       }
       
-      plot_com2 <- plot_barcom + base_plot + patchwork::plot_layout(widths = c(3, 4)) +
+      plot_com2 <- plot_barcom / base_plot + patchwork::plot_layout(heights = c(4, 4)) +
         plot_annotation(
           title = paste0("Timeline of ", type),
           theme = theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5))) + 
@@ -1582,6 +1582,7 @@ plot_selection_rank <- function(gstable, rank_col, score_col_index, title_text,
       segment.color = "black",
       segment.size = 0.5
     ) +
+    # 🔴 Special: add labels with box for select_gene
     geom_label_repel(
       data = df %>% filter(isSelected),
       aes(label = Gene),
