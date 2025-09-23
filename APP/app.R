@@ -26,7 +26,7 @@ ui <- tagList(
                           column(10, offset = 1,
                                h2("Welcome to the Evolution of Genetic Immune Escape Viewer"),
                                p("This Shiny application explores the landscape of immune escape evolution in cancer by integrating data from CRISPR screens, mutation frequencies, and mutation timing across multiple cancer types from the WGS projects."),
-                               h3("Inferring Mutation Timing"),
+                               h3("Key Feature: Inferring Mutation Timing"),
                                p("GRITIC is used to estimate when clonal copy number gains happened in a tumor's evolution. (PMID: 38943574)"),
                                tags$ul(
                                  tags$li("1. Posterior gain timing distributions for clonal copy number segments are calculated based on the copy number, tumor purity and the read counts for SNVs in the region of the gain."),
@@ -38,6 +38,7 @@ ui <- tagList(
                                  img(src = "Timing.jpg", height = "200px", width = "750px", style = "display: block; margin-left: auto; margin-right: auto;"),
                                  style = "margin-top: 20px; margin-bottom: 20px;"
                                ),
+                               h3("Let's explore the Evolution of Genetic Immune Escape !!!"),
                                tags$div(
                                  img(src = "Tutorials.png", height = "3492px", width = "900px", style = "display: block; margin-left: auto; margin-right: auto;"),
                                  style = "margin-top: 20px; margin-bottom: 20px;"
