@@ -69,7 +69,7 @@ ui <- tagList(
                                                  style = "border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px;"),
                                              style = "text-align: center;"
                                            ),
-                                           p("Step-by-step guidance on how to use EvoGIE to explore immune escape evolution across cancer cohorts.",
+                                           p("Step-by-step guidance on how to use EvoGIE to explore immune escape evolution across different cancer WGS cohorts.",
                                              style = "text-align: center;"),
                                            div(
                                              style = "text-align: center;",
