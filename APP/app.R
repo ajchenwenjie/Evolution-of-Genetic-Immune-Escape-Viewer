@@ -32,25 +32,29 @@ ui <- tagList(
                             
                             # --- Home page ---
                             tabPanel("home",
-                                    h2("Welcome to the Evolution of Genetic Immune Escape Viewer"),
-                                     p("Immune escape is a critical hallmark of cancer progression, yet its evolutionary path largely remains unclear. When do genetic alterations in immunomodulatory pathways arise during cancer development? What precedes them, and what happens afterwards? We seek to build a pan-cancer atlas that maps the genetic evolution of immune escape. How can we get there? Click below to learn more."),
+                                     h2("Welcome to the Evolution of Genetic Immune Escape Viewer"),
+                                     
+                                     # --- Intro paragraph ---
+                                     p("Immune escape is a critical hallmark of cancer progression, yet its evolutionary path largely remains unclear. When do genetic alterations in immunomodulatory pathways arise during cancer development? What precedes them, and what happens afterwards? We seek to build a pan-cancer atlas that maps the genetic evolution of immune escape. How can we get there? Click below to learn more.",
+                                       style = "font-size: 17px; line-height: 1.4; color: #333;"
+                                     ),
                                      
                                      br(),
                                      
+                                     # --- Two cards row ---
                                      fluidRow(
-                                       # Methodology card
                                        column(
                                          6,
                                          wellPanel(
-                                           style = "height: 500px; display: flex; flex-direction: column; justify-content: space-between;",
-                                           h3("Methodology", style = "text-align: center; margin-top: 0px;"),   # reduced margin
+                                           style = "min-height: 500px; display: flex; flex-direction: column; justify-content: space-between;",
+                                           h3("Methodology", style = "text-align: center; margin-top: 0px;"),
                                            div(
                                              img(src = "Page1.png", width = "100%", height = "auto",
                                                  style = "border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px;"),
                                              style = "text-align: center;"
                                            ),
                                            p("Learn how immunomodulatory genes and mutation timing are identified from large-scale CRISPR screens and WGS data.",
-                                             style = "text-align: center;"),
+                                             style = "text-align: center; font-size: 16px; color: #333; line-height: 1.5;"),
                                            div(
                                              style = "text-align: center;",
                                              actionButton("go_method", "Explore Methodology", class = "btn-primary")
@@ -58,19 +62,18 @@ ui <- tagList(
                                          )
                                        ),
                                        
-                                       # Tutorials card
                                        column(
                                          6,
                                          wellPanel(
-                                           style = "height: 500px; display: flex; flex-direction: column; justify-content: space-between;",
-                                           h3("Tutorials", style = "text-align: center; margin-top: 0px;"), 
+                                           style = "min-height: 500px; display: flex; flex-direction: column; justify-content: space-between;",
+                                           h3("Tutorials", style = "text-align: center; margin-top: 0px;"),
                                            div(
                                              img(src = "Page2.png", width = "100%", height = "auto",
                                                  style = "border: 1px solid #ddd; border-radius: 8px; margin-bottom: 30px;"),
                                              style = "text-align: center;"
                                            ),
                                            p("Step-by-step guidance on how to use EvoGIE to explore immune escape evolution across different cancer WGS cohorts.",
-                                             style = "text-align: center;"),
+                                             style = "text-align: center; font-size: 16px; color: #333; line-height: 1.5;"),
                                            div(
                                              style = "text-align: center;",
                                              actionButton("go_tutorial", "Open Tutorials", class = "btn-success")
@@ -79,12 +82,17 @@ ui <- tagList(
                                        )
                                      ),
                                      
-                                     # --- Contact info at bottom ---
-                                     div(
-                                       style = "margin-top: 40px; text-align: = left; font-size: 14px; color: #444;",
-                                       p("The Shiny App is developed by Wenjie Chen. The results are generated by Dr. Shengqing Gu lab and Dr. Peter Van Loo lab."),
-                                       p(
-                                         HTML("For more details, please refer to our <a href='https://www.biorxiv.org/content/10.1101/2025.01.17.632799v1' target='_blank'>BioRxiv preprint</a>.")
+                                     # --- Footer row ---
+                                     fluidRow(
+                                       column(
+                                         12,
+                                         div(
+                                           style = "margin-top: 40px; text-align: left; font-size: 16px; color: #444; line-height: 1.6; clear: both;",
+                                           p("The Shiny App is developed by Wenjie Chen. The results are generated by Dr. Shengqing Gu lab and Dr. Peter Van Loo lab."),
+                                           p(
+                                             HTML("For more details, please refer to our <a href='https://www.biorxiv.org/content/10.1101/2025.01.17.632799v1' target='_blank'>BioRxiv preprint</a>.")
+                                           )
+                                         )
                                        )
                                      )
                             ),
@@ -92,17 +100,22 @@ ui <- tagList(
                             tabPanel("method",
                                      # Previous button at top-left
                                      div(
-                                       style = "text-align: left; margin-bottom: 15px;",
-                                       actionButton("back_home1", "← Previous (Home)", class = "btn-secondary")
+                                       style = "text-align: left; margin-bottom: 18px;",
+                                       actionButton("back_home1", "Previous (Home)", class = "btn-secondary")
                                      ),
                                      
-                                     h3("Identifying Immunomodulatory Genes"),
-                                     p("The public CRISPR screen studies are comprehensively collected to identify the potential mechanisms for immune escape in cancers."),
+                                     h3("Identifying Immunomodulatory Genes", style = "font-size: 22px;"),
+                                     p("The public CRISPR screen studies are comprehensively collected to identify the potential mechanisms for immune escape in cancers.",
+                                       style = "font-size: 16px; line-height: 1.6; color: #333;"),
                                      tags$ul(
-                                       tags$li("1. Published CRISPR screens were collected for identifying the regulators of MHC-I expression, response to CD8 T-cell-mediated killing, NK-cell-mediated killing, macrophage-mediated phagocytosis and γδ T-cell-mediated killing."),
-                                       tags$li("2. The top 100 positive/negative regulators in each study were respectively unitized for Gene Set Enrichment Analysis."),
-                                       tags$li("3. Next, we selected the featured enrichments for further analysis based on the frequencies of studies reporting these enrichments."),
-                                       tags$li("4. We then combined the immunomodulatory genes in each frequently enriched pathway as a gene set for that pathway.")
+                                       tags$li("1. Published CRISPR screens were collected for identifying the regulators of MHC-I expression, response to CD8 T-cell-mediated killing, NK-cell-mediated killing, macrophage-mediated phagocytosis and γδ T-cell-mediated killing.",
+                                               style = "font-size: 16px; line-height: 1.6;"),
+                                       tags$li("2. The top 100 positive/negative regulators in each study were respectively unitized for Gene Set Enrichment Analysis.",
+                                               style = "font-size: 16px; line-height: 1.6;"),
+                                       tags$li("3. Next, we selected the featured enrichments for further analysis based on the frequencies of studies reporting these enrichments.",
+                                               style = "font-size: 16px; line-height: 1.6;"),
+                                       tags$li("4. We then combined the immunomodulatory genes in each frequently enriched pathway as a gene set for that pathway.",
+                                               style = "font-size: 16px; line-height: 1.6;")
                                      ),
                                      tags$div(
                                        img(src = "workflow.png", width = "750px", height = "auto",
@@ -110,13 +123,18 @@ ui <- tagList(
                                        style = "margin-top: 20px; margin-bottom: 20px;"
                                      ),
                                      
-                                     h3("Inferring Mutation Timing"),
-                                     p("GRITIC is used to estimate when clonal copy number gains happened in a tumor's evolution. <a href='https://pubmed.ncbi.nlm.nih.gov/38943574/' target='_blank'>(PMID: 38943574)</a>"),
+                                     h3("Inferring Mutation Timing", style = "font-size: 22px;"),
+                                     p(HTML("GRITIC is used to estimate when clonal copy number gains happened in a tumor's evolution. <a href='https://pubmed.ncbi.nlm.nih.gov/38943574/' target='_blank'>(PMID: 38943574)</a>"),
+                                       style = "font-size: 16px; line-height: 1.6; color: #333;"),
                                      tags$ul(
-                                       tags$li("1. Posterior gain timing distributions for clonal copy number segments are calculated based on the copy number, tumor purity and the read counts for SNVs in the region of the gain."),
-                                       tags$li("2. For each SNV, GRITIC samples when the gain happened, how many copies the SNV has, and then estimates when the SNV occurred."),
-                                       tags$li("3. The exact timing of each SNV is sampled within a time window defined by nearby gains."),
-                                       tags$li("4. The timing of SNVs is measured on a 'mutation time' scale that goes from 0 (representing conception) to 1 (the end of clonal evolution). Each SNV is sampled 250 times to create a full timing distribution.")
+                                       tags$li("1. Posterior gain timing distributions for clonal copy number segments are calculated based on the copy number, tumor purity and the read counts for SNVs in the region of the gain.",
+                                               style = "font-size: 16px; line-height: 1.6;"),
+                                       tags$li("2. For each SNV, GRITIC samples when the gain happened, how many copies the SNV has, and then estimates when the SNV occurred.",
+                                               style = "font-size: 16px; line-height: 1.6;"),
+                                       tags$li("3. The exact timing of each SNV is sampled within a time window defined by nearby gains.",
+                                               style = "font-size: 16px; line-height: 1.6;"),
+                                       tags$li("4. The timing of SNVs is measured on a 'mutation time' scale that goes from 0 (representing conception) to 1 (the end of clonal evolution). Each SNV is sampled 250 times to create a full timing distribution.",
+                                               style = "font-size: 16px; line-height: 1.6;")
                                      ),
                                      tags$div(
                                        img(src = "Timing.jpg", width = "750px", height = "auto",
@@ -129,8 +147,8 @@ ui <- tagList(
                             tabPanel("tutorial",
                                      # Previous button at top-left
                                      div(
-                                       style = "text-align: left; margin-bottom: 15px;",
-                                       actionButton("back_home2", "← Previous (Home)", class = "btn-secondary")
+                                       style = "text-align: left; margin-bottom: 18px;",
+                                       actionButton("back_home2", "Previous (Home)", class = "btn-secondary")
                                      ),
                                      tags$div(
                                        img(src = "Tutorials.png", width = "900px", height = "auto",
@@ -422,12 +440,13 @@ ui <- tagList(
              tabPanel("Contact",
                       fluidPage(
                         h4("Manuscript under preparation:"),
+                        style = "margin-top: 10px; text-align: left; font-size: 16px; color: #444; line-height: 1.5;",
                         p(
                           HTML("Wenjie Chen, Toby Baker, Zhihui Zhang, Huw A Ogilvie, Peter Van Loo, Shengqing Stan Gu. Evolutionary trajectories of immune escape across cancers. <a href='https://www.biorxiv.org/content/10.1101/2025.01.17.632799v1' target='_blank'>BioRxiv preprint</a>")
                           ),
                         br(),
                         p(
-                          HTML("For issues with the app, please contact: Dr. Wenjie Chen, wchen20@mdanderson.org")
+                          HTML("For issues with the app, please contact: Dr. Wenjie Chen, wchen20@mdanderson.org.")
                         )
                       )
              )
