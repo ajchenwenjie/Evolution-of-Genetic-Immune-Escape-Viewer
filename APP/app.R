@@ -32,15 +32,15 @@ ui <- tagList(
                             
                             # --- Home page ---
                             tabPanel("home",
+                                     div(
+                                       style = "text-align: center; margin-top: 10px; margin-bottom: 30px; font-style: italic; font-size: 20px; color: #555;",
+                                       HTML("&ldquo;<b>Nothing in biology makes sense except in the light of evolution</b>&rdquo;<br>- Theodosius Dobzhansky")
+                                     ),
                                      h2("Welcome to the Evolution of Genetic Immune Escape Viewer"),
-                                     
                                      # --- Intro paragraph ---
                                      p("Immune escape is a critical hallmark of cancer progression, yet its evolutionary path largely remains unclear. When do genetic alterations in immunomodulatory pathways arise during cancer development? What precedes them, and what happens afterwards? We seek to build a pan-cancer atlas that maps the genetic evolution of immune escape. How can we get there? Click below to learn more.",
                                        style = "font-size: 17px; line-height: 1.4; color: #333;"
                                      ),
-                                     
-                                     br(),
-                                     
                                      # --- Two cards row ---
                                      fluidRow(
                                        column(
